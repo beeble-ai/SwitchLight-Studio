@@ -14,9 +14,9 @@ if (isProd) {
 
 let updateInterval = null;
 
-// autoUpdater.on("checking-for-update", () => {
-//   log.info("업데이트 확인 중...");
-// });
+autoUpdater.on("checking-for-update", () => {
+  log.info("업데이트 확인 중...");
+});
 // autoUpdater.on("update-not-available", (info: any) => {
 //   log.info("현재 최신버전입니다.");
 // });
@@ -55,15 +55,6 @@ let updateInterval = null;
 //   });
 // });
 
-const data = {
-  provider: "github",
-  owner: "beeble-ai",
-  repo: "desktop-temp",
-  protocol: "https",
-};
-
-// autoUpdater.setFeedURL(data as any);
-
 (async () => {
   await app.whenReady();
 
@@ -84,8 +75,8 @@ const data = {
   const feed = `${server}/beeble-ai/desktop-temp/${process.platform}/1.0.0`;
   // }/${app.getVersion()}`;
 
-  // autoUpdater.setFeedURL(feed as any);
-  // autoUpdater.checkForUpdates();
+  autoUpdater.setFeedURL(feed as any);
+  autoUpdater.checkForUpdates();
   // updateInterval = setInterval(() => {
   //   autoUpdater.checkForUpdates();
   //   console.log("checking...");

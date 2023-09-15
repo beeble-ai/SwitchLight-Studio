@@ -76,14 +76,14 @@ autoUpdater.on("checking-for-update", () => {
   // }/${app.getVersion()}`;
 
   autoUpdater.setFeedURL(feed as any);
-  autoUpdater.checkForUpdates();
-  // updateInterval = setInterval(() => {
-  //   autoUpdater.checkForUpdates();
-  //   console.log("checking...");
-  //   console.log(app.getVersion());
-  //   console.log(process.platform, process.arch, app.getVersion());
-  //   console.log(autoUpdater.getFeedURL());
-  // }, 60 * 1000);
+  // autoUpdater.checkForUpdates();
+  updateInterval = setInterval(() => {
+    autoUpdater.checkForUpdates();
+    console.log("checking...");
+    console.log(app.getVersion());
+    console.log(process.platform, process.arch, app.getVersion());
+    console.log(autoUpdater.getFeedURL());
+  }, 60 * 1000);
 })();
 
 app.on("window-all-closed", () => {

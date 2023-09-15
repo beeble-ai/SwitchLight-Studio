@@ -35,7 +35,7 @@ autoUpdater.on("update-available", (info: any) => {
       "A new version download started. The app will be restarted to install the update.",
   };
   updateInterval = null;
-  dialog.showMessageBox(dialogOpts)
+  dialog.showMessageBox(dialogOpts);
 });
 
 autoUpdater.on("update-downloaded", (info: any) => {
@@ -49,7 +49,7 @@ autoUpdater.on("update-downloaded", (info: any) => {
       "A new version has been downloaded. Restart the application to apply the updates.",
   };
   dialog.showMessageBox(dialogOpts).then((returnValue) => {
-    log.info("LOG: " + returnValue.response)
+    log.info("LOG: " + returnValue.response);
     if (returnValue.response === 0) autoUpdater.quitAndInstall();
   });
 });
@@ -70,19 +70,10 @@ autoUpdater.on("update-downloaded", (info: any) => {
     mainWindow.webContents.openDevTools();
   }
 
-  const server = "https://update.electronjs.org";
-  const feed = `${server}/beeble-ai/desktop-temp/${process.platform}-${process.arch}/${app.getVersion()}`; // Windows
-  log.info("LOG FEED: " + feed);
-  // const feed = `${server}/beeble-ai/desktop-temp/${process.platform}/${app.getVersion()}`; // Mac
-
-  // autoUpdater.setFeedURL(feed as any);
   autoUpdater.checkForUpdatesAndNotify();
   updateInterval = setInterval(() => {
     autoUpdater.checkForUpdatesAndNotify();
     console.log("checking...");
-    console.log(app.getVersion());
-    console.log(process.platform, process.arch, app.getVersion());
-    // console.log(autoUpdater.getFeedURL());
   }, 60 * 1000);
 })();
 

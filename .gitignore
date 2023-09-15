@@ -1,5 +1,6 @@
 node_modules/
 app/
+.DS_Store
 yarn.lock
 */.next/
 dist/

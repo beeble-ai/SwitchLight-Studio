@@ -1,20 +1,42 @@
 {
-  "private": true,
+  "private": false,
   "name": "my-nextron-app",
   "description": "My application description",
-  "version": "1.0.0",
+  "version": "1.5.3",
   "author": "Yoshihide Shiono <shiono.yoshihide@gmail.com>",
   "main": "app/background.js",
   "scripts": {
     "dev": "nextron",
     "build": "nextron build",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "publish-app": "electron-builder -p always"
+  },
+  "build": {
+    "appId": "com.beeble.desktop-demo",
+    "publish": {
+      "provider": "github",
+      "owner": "beeble-ai",
+      "repo": "desktop-temp"
+    },
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "sign": false
+    }
   },
   "dependencies": {
+    "electron-log": "^4.4.8",
     "electron-serve": "^1.1.0",
-    "electron-squirrel-startup": "^1.0.0",
-    "electron-store": "^8.1.0",
-    "update-electron-app": "^2.0.1"
+    "electron-store": "^8.1.0"
   },
   "devDependencies": {
     "@emotion/cache": "^11.10.3",
@@ -24,8 +46,8 @@
     "@mui/material": "^5.10.8",
     "@types/node": "^18.11.18",
     "@types/react": "^18.0.26",
-    "electron": "^21.3.3",
-    "electron-builder": "^23.6.0",
+    "electron": "^26.2.1",
+    "electron-builder": "^24.6.4",
     "next": "^12.3.4",
     "nextron": "^8.7.0",
     "react": "^18.2.0",

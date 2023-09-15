@@ -2,14 +2,16 @@
   "private": false,
   "name": "my-nextron-app",
   "description": "My application description",
-  "version": "1.5.2",
+  "version": "1.5.6",
   "author": "Yoshihide Shiono <shiono.yoshihide@gmail.com>",
   "main": "app/background.js",
   "scripts": {
     "dev": "nextron",
     "build": "nextron build",
+    "build:win32": "nextron build --win --ia32",
+    "build:win64": "nextron build --win --x64",
     "postinstall": "electron-builder install-app-deps",
-    "publish-app": "electron-builder -p always"
+    "publish-app": "electron-builder -p always --win --x64"
   },
   "build": {
     "appId": "com.beeble.desktop-demo",
@@ -29,6 +31,13 @@
       "entitlementsInherit": "build/entitlements.mac.plist",
       "gatekeeperAssess": false
     },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "icon": "build/icon.ico"
+    },
     "dmg": {
       "sign": false
     }
@@ -36,7 +45,8 @@
   "dependencies": {
     "electron-log": "^4.4.8",
     "electron-serve": "^1.1.0",
-    "electron-store": "^8.1.0"
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.1.4"
   },
   "devDependencies": {
     "@emotion/cache": "^11.10.3",

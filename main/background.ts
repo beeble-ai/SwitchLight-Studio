@@ -1,5 +1,5 @@
-import { app, dialog, autoUpdater } from "electron";
-// import { autoUpdater, UpdateInfo } from "electron-updater";
+import { app, dialog } from "electron";
+import { autoUpdater } from "electron-updater";
 import * as log from "electron-log";
 import serve from "electron-serve";
 import { createWindow } from "./helpers";
@@ -24,12 +24,13 @@ autoUpdater.on("error", (err) => {
   log.info("에러가 발생하였습니다. 에러내용 : " + err);
 });
 
-autoUpdater.on("update-available", (_event, releaseNotes, releaseName) => {
+autoUpdater.on("update-available", (info: any) => {
   const dialogOpts = {
     type: "info",
     buttons: ["Ok"],
     title: "Update Available",
-    message: process.platform === "win32" ? releaseNotes : releaseName,
+    message: "Hello",
+    // message: process.platform === "win32" ? releaseNotes : releaseName,
     detail:
       "A new version download started. The app will be restarted to install the update.",
   };
@@ -37,12 +38,13 @@ autoUpdater.on("update-available", (_event, releaseNotes, releaseName) => {
   dialog.showMessageBox(dialogOpts)
 });
 
-autoUpdater.on("update-downloaded", (_event, releaseNotes, releaseName) => {
+autoUpdater.on("update-downloaded", (info: any) => {
   const dialogOpts = {
     type: "info",
     buttons: ["Restart", "Later"],
     title: "Application Update",
-    message: process.platform === "win32" ? releaseNotes : releaseName,
+    message: "Hello",
+    // message: process.platform === "win32" ? releaseNotes : releaseName,
     detail:
       "A new version has been downloaded. Restart the application to apply the updates.",
   };
@@ -69,16 +71,18 @@ autoUpdater.on("update-downloaded", (_event, releaseNotes, releaseName) => {
   }
 
   const server = "https://update.electronjs.org";
-  const feed = `${server}/beeble-ai/desktop-temp/${process.platform}/${app.getVersion()}`;
+  const feed = `${server}/beeble-ai/desktop-temp/${process.platform}-${process.arch}/${app.getVersion()}`; // Windows
+  log.info("LOG FEED: " + feed);
+  // const feed = `${server}/beeble-ai/desktop-temp/${process.platform}/${app.getVersion()}`; // Mac
 
-  autoUpdater.setFeedURL(feed as any);
-  autoUpdater.checkForUpdates();
+  // autoUpdater.setFeedURL(feed as any);
+  autoUpdater.checkForUpdatesAndNotify();
   updateInterval = setInterval(() => {
-    autoUpdater.checkForUpdates();
+    autoUpdater.checkForUpdatesAndNotify();
     console.log("checking...");
     console.log(app.getVersion());
     console.log(process.platform, process.arch, app.getVersion());
-    console.log(autoUpdater.getFeedURL());
+    // console.log(autoUpdater.getFeedURL());
   }, 60 * 1000);
 })();
 

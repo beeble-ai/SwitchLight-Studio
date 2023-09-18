@@ -2,33 +2,38 @@ import React, { useEffect, useRef, useState } from "react";
 import Head from "next/head";
 import electron from "electron";
 
+import { useRouter } from 'next/router';
+
 const ipcRenderer = electron.ipcRenderer || false;
 
 function Home() {
+  const router = useRouter(); // <-- Call the useRouter hook
+
   const [progress, setProgress] = React.useState("0");
 
   useEffect(() => {
-    if (ipcRenderer) {
-      ipcRenderer.send("compare-and-download-engine");
-    }
-  }, []);
+    if (!ipcRenderer) return;
 
-  useEffect(() => {
-    if (ipcRenderer) {
-      ipcRenderer.on("compare-and-download-engine", (event, data) => {
-        setProgress(data);
-      });
-    }
-  }, []);
+    // Send an IPC event immediately.
+    ipcRenderer.send("compare-and-download-engine");
 
-  useEffect(() => {
-    if (progress === "complete") {
-      if (ipcRenderer) {
+    // Listen for a response from the renderer process.
+    const handleCompareAndDownload = (event, data) => {
+      setProgress(data);
+      if (data === "complete") {
         ipcRenderer.removeAllListeners("compare-and-download-engine");
+        router.push("/check-api-key");
       }
-      window.location.href = "/keyCheck";
-    }
-  }, [progress]);
+    };
+
+    ipcRenderer.on("compare-and-download-engine", handleCompareAndDownload);
+
+    // Cleanup on component unmount or when detaching the event listener explicitly.
+    return () => {
+      ipcRenderer.removeListener("compare-and-download-engine", handleCompareAndDownload);
+    };
+  }, []);
+
 
   return (
     <React.Fragment>

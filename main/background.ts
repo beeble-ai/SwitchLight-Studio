@@ -13,7 +13,7 @@ if (isProd) {
   app.setPath("userData", `${app.getPath("userData")} (development)`);
 }
 
-// initializeAutoUpdater(); // Set up the auto-updater event listeners
+initializeAutoUpdater(); // Set up the auto-updater event listeners
 
 (async () => {
   await app.whenReady();
@@ -54,9 +54,11 @@ async function isModelUpdateRequired(remoteModelVersion) {
     modelUpdateRequired = true;
   }
 
+  // path.join(path.dirname(app.getAppPath()), 'engine', file);
+
   // If model is not saved in local, then update the model
   for (const file of localConfig["model"][localModelVersion]) {
-    if (!fs.existsSync(path.join("engine", file))) {
+    if (!fs.existsSync(path.join(path.dirname(app.getAppPath()), 'engine', file))) {
       console.log("Model file is missing", file);
       log.info("Model file is missing", file);
       modelUpdateRequired = true;
@@ -109,7 +111,7 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
       } else {
         // For matching versions, download only the files that do not exist in the local directory
         filesToDownload = remoteFiles.filter((file) => {
-          const filePath = path.join(__dirname, saveDirectory, file);
+          const filePath = path.join(path.dirname(app.getAppPath()), saveDirectory, file);
           return !fs.existsSync(filePath);
         });
       }
@@ -154,7 +156,7 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
       }
 
       for (const file of filesToDownload) {
-        const filePath = path.join(__dirname, saveDirectory, file);
+        const filePath = path.join(path.dirname(app.getAppPath()), saveDirectory, file);
         const url = `https://desktop.beeble.ai/engine/${basePath}/${file}`;
         const response = await fetch(url);
 
@@ -191,31 +193,51 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
   event.reply("compare-and-download-engine", "complete");
 });
 
+ipcMain.on("api-key-read", (event, apiKey) => {
+  const fs = require("fs");
+  const path = require("path");
+
+  const apiKeyFilePath = path.join(path.dirname(app.getAppPath()), "api-key.txt");
+  // Check if the file exists.
+  if (fs.existsSync(apiKeyFilePath)) {
+    // If it does, read the content from the file.
+    const apiKeyContent = fs.readFileSync(apiKeyFilePath, { encoding: "utf-8" });
+    // Reply with the content read from the file.
+    event.reply("api-key-read", { keyexists: true, key: apiKeyContent });
+  } else {
+    event.reply("api-key-read", { keyexists: false });
+  }
+
+});
+
 ipcMain.on("api-key-submitted", (event, apiKey) => {
   const fs = require("fs");
   const path = require("path");
-  const fetch = require("node-fetch");
 
-  const apiKeyFilePath = path.join(__dirname, "api-key.txt");
+  const apiKeyFilePath = path.join(path.dirname(app.getAppPath()), "api-key.txt");
   fs.writeFileSync(apiKeyFilePath, apiKey);
+  event.reply("api-key-submitted", "success");
+
 });
 
 ipcMain.on("initialize-engine", async (event) => {
   const fs = require("fs");
   const path = require("path");
+  const fetch = require("node-fetch");
 
   // Get engine executable path
-  let exeFolderPath = await path.join(__dirname, "engine");
+  let exeFolderPath = await path.join(path.dirname(app.getAppPath()), "engine");
   let exePath = await path.join(exeFolderPath, "SwitchLight.exe");
 
   // Read the api-key.txt file
-  const apiKeyFilePath = path.join(__dirname, "api-key.txt");
+  const apiKeyFilePath = path.join(path.dirname(app.getAppPath()), "api-key.txt");
   const apiKey = fs.readFileSync(apiKeyFilePath, "utf8");
 
   // Check if model update is required
   const response = await fetch(
     "https://desktop.beeble.ai/engine/engine-config.json"
   );
+
   const remoteConfig = await response.json();
   const remoteModelVersion = Object.keys(remoteConfig["model"])[0];
 
@@ -224,26 +246,19 @@ ipcMain.on("initialize-engine", async (event) => {
   console.log("modelUpdateRequired", modelUpdateRequired);
 
   // Construct the command
-  let command = `${exePath} -m init -k ${apiKey}${
-    modelUpdateRequired ? " --download-model" : ""
-  } --model-version ${remoteModelVersion}`;
+  let command = `${exePath} -m init -k ${apiKey}${modelUpdateRequired ? " --download-model" : ""
+    } --model-version ${remoteModelVersion}`;
   let option = { cwd: exeFolderPath };
   // Set the modelPath based on the mode
-  const { exec } = require("child_process");
-  return new Promise((resolve, reject) => {
-    exec(command, option, (error, stdout, stderr) => {
-      if (error) {
-        console.log("Error during engine initialization:", error);
-        reject(error);
-        return;
-      }
+  const child = require("child_process").exec(command, option);
 
-      // Update the local configuration file only after successful execution
-      fs.writeFileSync(
-        "./engine-config.json",
-        JSON.stringify(remoteConfig, null, 4)
-      );
-      resolve(stdout);
-    });
+  child.stdout.on('data', (data) => {
+    event.reply("initialize-engine", { description: data, modelUpdateRequired: modelUpdateRequired, isProgress: false })
   });
+
+
+  child.stderr.on('data', (data) => {
+    event.reply("initialize-engine", { description: data, isProgress: true })
+  });
+
 });

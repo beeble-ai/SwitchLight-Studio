@@ -46,13 +46,15 @@ function AssignPath() {
         <span className="text-[10px]">Ver. XX</span>
       </div>
 
-      <div className="relative">
+      <div className="relative mt-10 mx-2">
         <button
-          className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+          className="w-[150px] text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
           type="button"
           onClick={toggleDropdown}
         >
-          {mode === "" ? "Select mode" : mode}
+          <div className="flex-1 text-center">
+            {mode === "" ? "Select mode" : mode}
+          </div>
           <svg
             className="w-2.5 h-2.5 ml-2.5"
             aria-hidden="true"
@@ -70,33 +72,30 @@ function AssignPath() {
           </svg>
         </button>
 
-        {/* <div className="flex flex-col gap-2"> */}
-        <div
-          className={`absolute z-10 ${openDropdown ? "" : "hidden"} bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700 dark:divide-gray-600`}
-        >
+        <div className={`absolute z-10 mt-2 w-[150px] ${openDropdown ? "" : "hidden"} bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700 dark:divide-gray-600`}>
           <button
-            className="text-center px-4 py-3 text-sm text-gray-900 dark:text-white"
+            className="flex items-center justify-center w-[150px] py-3 text-sm text-gray-900 dark:text-white"
             onClick={() => {
-              setMode("Remove Background");
+              setMode("Video");
               toggleDropdown();
             }}
           >
-            Remove Background
+            Video
           </button>
 
           <button
-            className="text-center px-4 py-3 text-sm text-gray-900 dark:text-white"
+            className="flex items-center justify-center w-[150px] py-3 text-sm text-gray-900 dark:text-white"
             onClick={() => {
-              setMode("De-render");
+              setMode("Image Sequence");
               toggleDropdown();
             }}
           >
-            De-render
+            Image Sequence
           </button>
-          {/* </div> */}
         </div>
 
-        <div className="flex flex-col">
+
+        <div className="flex flex-col mt-10">
           <FolderPicker
             label="Input Folder"
             path={inputFolderPath}

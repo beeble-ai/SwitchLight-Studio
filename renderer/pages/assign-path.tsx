@@ -4,6 +4,8 @@ import FolderPicker from "../components/folder-picker";
 
 import electron from "electron";
 
+import { Button, Label, TextInput } from "flowbite-react";
+
 function AssignPath() {
 
   const ipcRenderer = electron.ipcRenderer || false;
@@ -21,6 +23,9 @@ function AssignPath() {
   const [inputFolderPath, setInputFolderPath] = useState("");
   const [outputFolderPath, setOutputFolderPath] = useState("");
 
+
+  const [terminalOutput, setTerminalOutput] = useState("");
+
   const toggleDropdown = () => setOpenDropdown(prevState => !prevState);
 
 
@@ -33,7 +38,7 @@ function AssignPath() {
       ipcRenderer.removeAllListeners("select-directory");
     };
 
-    ipcRenderer.send("select-directory");
+    ipcRenderer.send("select-directory", "input");
     ipcRenderer.on("select-directory", handleSelectDirectory);
   }
 
@@ -46,7 +51,7 @@ function AssignPath() {
       ipcRenderer.removeAllListeners("select-directory");
     };
 
-    ipcRenderer.send("select-directory");
+    ipcRenderer.send("select-directory", "output");
     ipcRenderer.on("select-directory", handleSelectDirectory);
   }
 
@@ -60,6 +65,49 @@ function AssignPath() {
       setOutputLabel("Output Images: ")
     }
   }, [mode])
+
+  function runBgRemoval() {
+
+    console.log("bgremoval clicked")
+    if (!ipcRenderer) return;
+
+    const handleRemoveBackground = (event, data) => {
+
+      // setTerminalOutput(prev => (prev ? prev + "\n" : "") + data["description"]);
+      setTerminalOutput(prev => (prev ? prev : "") + data["description"]);
+
+      if (data["isComplete"]) {
+        ipcRenderer.removeAllListeners("run-remove-bg");
+        runDerender();
+      }
+
+    };
+
+    ipcRenderer.send("run-remove-bg", { mode: mode, inputDir: inputFolderPath, outputDir: outputFolderPath });
+    ipcRenderer.on("run-remove-bg", handleRemoveBackground);
+  }
+
+  function runDerender() {
+    if (!ipcRenderer) return;
+
+    const handleDerender = (event, data) => {
+
+      // setTerminalOutput(prev => (prev ? prev + "\n" : "") + data["description"]);
+      setTerminalOutput(prev => (prev ? prev : "") + data["description"]);
+
+      if (data["isComplete"]) {
+        ipcRenderer.removeAllListeners("run-derender");
+      }
+    };
+
+    if (mode === "Video") {
+      ipcRenderer.send("run-derender", { mode: mode, bgRemovalDir: outputFolderPath, outputDir: outputFolderPath });
+    } else {
+      // remove bg 에 따라서 달라짐
+      ipcRenderer.send("run-derender", { mode: mode, bgRemovalDir: inputFolderPath, outputDir: outputFolderPath });
+
+    } ipcRenderer.on("run-derender", handleDerender);
+  }
 
   return (
     <React.Fragment>
@@ -135,8 +183,17 @@ function AssignPath() {
             ref={outputFolder}
           />
         </div>
-
       </div>
+
+      <div className="flex justify-end mx-5 mt-10">
+        <Button onClick={runBgRemoval}> Submit </Button>
+      </div>
+
+
+      <div className="bg-black m-5 p-5 rounded-xl text-white h-[300px] whitespace-pre-line overflow-auto">
+        {terminalOutput}
+      </div>
+
 
     </React.Fragment >
   );

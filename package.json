@@ -43,11 +43,13 @@
     }
   },
   "dependencies": {
+    "@electron/remote": "^2.0.11",
     "electron-log": "^4.4.8",
     "electron-serve": "^1.1.0",
     "electron-store": "^8.1.0",
     "electron-updater": "^6.1.4",
-    "flowbite-react": "^0.6.0"
+    "flowbite-react": "^0.6.0",
+    "node-fetch": "2"
   },
   "devDependencies": {
     "@types/node": "^18.11.18",

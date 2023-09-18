@@ -1,8 +1,8 @@
 import { app, dialog } from "electron";
-import { autoUpdater } from "electron-updater";
-import * as log from "electron-log";
 import serve from "electron-serve";
 import { createWindow } from "./helpers";
+import { initializeAutoUpdater, autoUpdater } from "./helpers/update-handler"; // Import updateInterval too
+
 
 const isProd: boolean = process.env.NODE_ENV === "production";
 
@@ -12,47 +12,7 @@ if (isProd) {
   app.setPath("userData", `${app.getPath("userData")} (development)`);
 }
 
-let updateInterval = null;
-
-autoUpdater.on("checking-for-update", () => {
-  log.info("업데이트 확인 중...");
-});
-autoUpdater.on("update-not-available", (info: any) => {
-  log.info("현재 최신버전입니다.");
-});
-autoUpdater.on("error", (err) => {
-  log.info("에러가 발생하였습니다. 에러내용 : " + err);
-});
-
-autoUpdater.on("update-available", (info: any) => {
-  const dialogOpts = {
-    type: "info",
-    buttons: ["Ok"],
-    title: "Update Available",
-    message: "Hello",
-    // message: process.platform === "win32" ? releaseNotes : releaseName,
-    detail:
-      "A new version download started. The app will be restarted to install the update.",
-  };
-  updateInterval = null;
-  dialog.showMessageBox(dialogOpts);
-});
-
-autoUpdater.on("update-downloaded", (info: any) => {
-  const dialogOpts = {
-    type: "info",
-    buttons: ["Restart", "Later"],
-    title: "Application Update",
-    message: "Hello",
-    // message: process.platform === "win32" ? releaseNotes : releaseName,
-    detail:
-      "A new version has been downloaded. Restart the application to apply the updates.",
-  };
-  dialog.showMessageBox(dialogOpts).then((returnValue) => {
-    log.info("LOG: " + returnValue.response);
-    if (returnValue.response === 0) autoUpdater.quitAndInstall();
-  });
-});
+initializeAutoUpdater(); // Set up the auto-updater event listeners
 
 (async () => {
   await app.whenReady();
@@ -70,11 +30,9 @@ autoUpdater.on("update-downloaded", (info: any) => {
     mainWindow.webContents.openDevTools();
   }
 
+  // Check for update on startup
   autoUpdater.checkForUpdatesAndNotify();
-  updateInterval = setInterval(() => {
-    autoUpdater.checkForUpdatesAndNotify();
-    console.log("checking...");
-  }, 60 * 1000);
+
 })();
 
 app.on("window-all-closed", () => {

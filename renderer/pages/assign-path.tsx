@@ -1,12 +1,19 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Head from "next/head";
-import Link from "next/link";
 import FolderPicker from "../components/folder-picker";
 
+import electron from "electron";
+
 function AssignPath() {
+
+  const ipcRenderer = electron.ipcRenderer || false;
+
   const [openDropdown, setOpenDropdown] = useState(false);
 
-  const [mode, setMode] = useState("");
+  const [mode, setMode] = useState("Video"); // Video or Image Sequence
+
+  const [inputLabel, setInputLabel] = useState("");
+  const [outputLabel, setOutputLabel] = useState("");
 
   const inputFolder = useRef<HTMLInputElement | null>(null);
   const outputFolder = useRef<HTMLInputElement | null>(null);
@@ -16,25 +23,43 @@ function AssignPath() {
 
   const toggleDropdown = () => setOpenDropdown(prevState => !prevState);
 
-  const handleInputFolderChange = (event) => {
-    const files = event.target.files;
-    if (files.length > 0) {
-      const path = files[0].webkitRelativePath;
-      const parts = path.split("/");
-      const parentDir = parts.length > 1 ? parts[parts.length - 2] : parts[0];
-      setInputFolderPath(parentDir);
-    }
-  };
 
-  const handleOutputFolderChange = (event) => {
-    const files = event.target.files;
-    if (files.length > 0) {
-      const path = files[0].webkitRelativePath;
-      const parts = path.split("/");
-      const parentDir = parts.length > 1 ? parts[parts.length - 2] : parts[0];
-      setOutputFolderPath(parentDir);
+  function handleInputFolderChange() {
+    if (!ipcRenderer) return;
+
+    const handleSelectDirectory = (event, data) => {
+
+      setInputFolderPath(data['directoryPath'])
+      ipcRenderer.removeAllListeners("select-directory");
+    };
+
+    ipcRenderer.send("select-directory");
+    ipcRenderer.on("select-directory", handleSelectDirectory);
+  }
+
+  function handleOutputFolderChange() {
+    if (!ipcRenderer) return;
+
+    const handleSelectDirectory = (event, data) => {
+
+      setOutputFolderPath(data['directoryPath'])
+      ipcRenderer.removeAllListeners("select-directory");
+    };
+
+    ipcRenderer.send("select-directory");
+    ipcRenderer.on("select-directory", handleSelectDirectory);
+  }
+
+
+  useEffect(() => {
+    if (mode === "Video") {
+      setInputLabel("Input Video: ")
+      setOutputLabel("Output Video: ")
+    } else {
+      setInputLabel("Input Images: ")
+      setOutputLabel("Output Images: ")
     }
-  };
+  }, [mode])
 
   return (
     <React.Fragment>
@@ -97,16 +122,16 @@ function AssignPath() {
 
         <div className="flex flex-col mt-10">
           <FolderPicker
-            label="Input Folder"
+            label={inputLabel}
             path={inputFolderPath}
-            onChange={handleInputFolderChange}
+            onClick={handleInputFolderChange}
             ref={inputFolder}
           />
 
           <FolderPicker
-            label="Output Folder"
+            label={outputLabel}
             path={outputFolderPath}
-            onChange={handleOutputFolderChange}
+            onClick={handleOutputFolderChange}
             ref={outputFolder}
           />
         </div>

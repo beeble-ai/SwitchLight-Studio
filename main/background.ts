@@ -262,3 +262,23 @@ ipcMain.on("initialize-engine", async (event) => {
   });
 
 });
+
+ipcMain.on("select-directory", async (event) => {
+
+  const fs = require("fs");
+  const { dialog } = require("electron");
+
+  const result = await dialog.showOpenDialog({
+    properties: ["openDirectory"],
+  });
+
+  if (result.canceled) {
+    return null;
+  }
+
+  const directoryPath = result.filePaths[0];
+  const files = fs.readdirSync(directoryPath);
+
+  event.reply("select-directory", { directoryPath: directoryPath, numFiles: files.length });
+
+})

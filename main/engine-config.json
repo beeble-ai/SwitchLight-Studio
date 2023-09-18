@@ -1,0 +1,78 @@
+{
+    "model": {
+        "v0.1.0": [
+            "switchLight.enc"
+        ]
+    },
+    "core": {
+        "v0.1.0": [
+            "SwitchLight.exe",
+            "SwitchLight.exp",
+            "SwitchLight.lib"
+        ]
+    },
+    "thirdparty_libs": {
+        "base": [
+            "asmjit.dll",
+            "c10.dll",
+            "c10_cuda.dll",
+            "caffe2_nvrtc.dll",
+            "cudart64_110.dll",
+            "cufftw64_10.dll",
+            "cudnn64_8.dll",
+            "cudnn_adv_infer64_8.dll",
+            "cudnn_cnn_infer64_8.dll",
+            "cudnn_ops_infer64_8.dll",
+            "cupti64_2022.3.0.dll",
+            "fbgemm.dll",
+            "fbjni.dll",
+            "Iex-3_2.dll",
+            "Imath-3_1.dll",
+            "IlmThread-3_2.dll",
+            "libcurl.dll",
+            "libiomp5md.dll",
+            "libiompstubs5md.dll",
+            "libsodium.dll",
+            "nvToolsExt64_1.dll",
+            "nvfuser_codegen.dll",
+            "nvrtc-builtins64_118.dll",
+            "nvrtc64_112_0.dll",
+            "OpenEXR-3_2.dll",
+            "OpenEXRCore-3_2.dll",
+            "OpenEXRUtil-3_2.dll",
+            "opencv_calib3d480.dll",
+            "opencv_core480.dll",
+            "opencv_dnn480.dll",
+            "opencv_features2d480.dll",
+            "opencv_flann480.dll",
+            "opencv_gapi480.dll",
+            "opencv_highgui480.dll",
+            "opencv_imgcodecs480.dll",
+            "opencv_imgproc480.dll",
+            "opencv_ml480.dll",
+            "opencv_objdetect480.dll",
+            "opencv_photo480.dll",
+            "opencv_stitching480.dll",
+            "opencv_video480.dll",
+            "opencv_videoio480.dll",
+            "opencv_videoio_ffmpeg480_64.dll",
+            "pytorch_jni.dll",
+            "torch.dll",
+            "torch_cpu.dll",
+            "torch_cuda.dll",
+            "torch_global_deps.dll",
+            "uv.dll",
+            "zlibwapi.dll"
+        ],
+        "v0.1.0": []
+    },
+    "sample_images": {
+        "v0.1.0": [
+            "sample_01.jpg",
+            "sample_02.jpg",
+            "sample_03.jpg",
+            "sample_04.jpg",
+            "sample_05.jpg"
+        ]
+    }
+}

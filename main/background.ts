@@ -32,7 +32,7 @@ initializeAutoUpdater(); // Set up the auto-updater event listeners
   }
 
   // Check for update on startup
-  // autoUpdater.checkForUpdatesAndNotify();
+  autoUpdater.checkForUpdatesAndNotify();
 })();
 
 app.on("window-all-closed", () => {

@@ -285,10 +285,6 @@ ipcMain.on("select-directory", async (event, type) => {
     return null;
   }
 
-  console.log(result)
-
-
-
   const directoryPath = result.filePaths[0];
   // const files = fs.readdirSync(directoryPath);
 
@@ -300,29 +296,26 @@ ipcMain.on("select-directory", async (event, type) => {
 ipcMain.on("run-remove-bg", async (event, args) => {
   const fs = require("fs");
   const path = require("path");
-  const fetch = require("node-fetch");
 
   // Get engine executable path
   let enginePath = await path.join(path.dirname(app.getAppPath()), "engine");
   let exePath = await path.join(enginePath, "SwitchLight.exe");
 
-  let modelPath = await path.join(enginePath, "SwitchLight.enc");
-
-
-  // TODO: mkdir - bgremoval
+  let modelPath = await path.join(enginePath, "switchLight.enc");
 
   // Read the api-key.txt file
   const apiKeyFilePath = path.join(path.dirname(app.getAppPath()), "api-key.txt");
   const apiKey = fs.readFileSync(apiKeyFilePath, "utf8");
 
+  const bgRemovalOutputDir = path.join(args.outputDir, "bgremoval");
 
   let command = ""
   if (args.mode === "Video") {
     // Construct the command
-    command = `${exePath} -m removebg -p ${modelPath} -i ${args.inputDir} -o ${args.outputDir} -k ${apiKey}`;
+    command = `${exePath} -m removebg -p ${modelPath} -i ${args.inputDir} -o ${bgRemovalOutputDir} -k ${apiKey}`;
   } else {
     // Construct the command
-    command = `${exePath} -m removebg -p ${modelPath} -i ${args.inputDir} -o ${args.outputDir} -k ${apiKey}`;
+    command = `${exePath} -m removebg -p ${modelPath} -i ${args.inputDir} -o ${bgRemovalOutputDir} -k ${apiKey}`;
   }
   // Construct the command
   let option = { cwd: enginePath };
@@ -330,43 +323,48 @@ ipcMain.on("run-remove-bg", async (event, args) => {
   const child = require("child_process").exec(command, option);
 
   child.stdout.on('data', (data) => {
+    console.log(data)
     if (data.includes('55/55 frames')) {
       event.reply("run-remove-bg", { description: data, isComplete: true })
     } else {
       event.reply("run-remove-bg", { description: data, isComplete: false })
     }
-
-
   });
 
+  child.stderr.on('data', (data) => {
+    console.log(data)
 
+  });
 });
 
 ipcMain.on("run-derender", async (event, args) => {
   const fs = require("fs");
   const path = require("path");
-  const fetch = require("node-fetch");
 
   // Get engine executable path
   let enginePath = await path.join(path.dirname(app.getAppPath()), "engine");
   let exePath = await path.join(enginePath, "SwitchLight.exe");
 
-  let modelPath = await path.join(enginePath, "SwitchLight.enc");
+  let modelPath = await path.join(enginePath, "switchLight.enc");
 
   // Read the api-key.txt file
   const apiKeyFilePath = path.join(path.dirname(app.getAppPath()), "api-key.txt");
   const apiKey = fs.readFileSync(apiKeyFilePath, "utf8");
 
+  let bgRemovalDir;
+  if (args.bgRemovalChecked) {
+    bgRemovalDir = path.join(args.inputDir, "bgremoval");
+  } else {
+    bgRemovalDir = args.inputDir;
+  }
 
   let command = ""
   if (args.mode === "Video") {
-
-    console.log(args.bgRemovalDir, args.outputDir)
     // Construct the command
-    command = `${exePath} -m derender -p ${modelPath} -i ${args.bgRemovalDir} -o ${args.outputDir} -k ${apiKey} -v`;
+    command = `${exePath} -m derender -p ${modelPath} -i ${bgRemovalDir} -o ${args.outputDir} -k ${apiKey}`;
   } else {
     // Construct the command
-    command = `${exePath} -m derender -p ${modelPath} -i ${args.bgRemovalDir} -o ${args.outputDir} -k ${apiKey}`;
+    command = `${exePath} -m derender -p ${modelPath} -i ${bgRemovalDir} -o ${args.outputDir} -k ${apiKey}`;
   }
   // Construct the command
   let option = { cwd: enginePath };
@@ -381,9 +379,5 @@ ipcMain.on("run-derender", async (event, args) => {
       event.reply("run-derender", { description: data, isComplete: false })
     }
   });
-
-  // child.stderr.on('data', (data) => {
-  //   event.reply("run-derender", { description: data })
-  // });
 
 });

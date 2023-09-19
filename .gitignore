@@ -4,3 +4,4 @@ app/
 yarn.lock
 */.next/
 dist/
+.vs/

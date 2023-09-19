@@ -164,6 +164,8 @@ function AssignPath() {
           <button
             className="w-[150px] text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
             type="button"
+            disabled={isEngineRunning}
+            style={isEngineRunning ? { cursor: "not-allowed" } : { cursor: "pointer" }}
             onClick={toggleDropdown}
           >
             <div className="flex-1 text-center">
@@ -210,7 +212,7 @@ function AssignPath() {
         {/* Background Removal Checkbox */}
         {mode !== "Video" &&
           <div className="flex items-center gap-2">
-            <Checkbox id="Remove Background" checked={bgRemovalChecked}
+            <Checkbox id="Remove Background" disabled={isEngineRunning} checked={bgRemovalChecked}
               onChange={handleBgRemovalCheckboxChange} />
             <Label className="text-white" htmlFor="Remove Background">
               Remove Background
@@ -248,9 +250,10 @@ function AssignPath() {
         />
       </div>
 
+      {/* Run Engine button */}
       <div className="flex justify-end mx-5 mt-5">
         <Button
-          className="bg-yellow-400 text-black w-[100px]"
+          className={`${isEngineRunning ? "bg-gray-400" : "bg-yellow-400"} text-black w-[100px]`}
           disabled={isEngineRunning}
           onClick={() => {
             setIsEngineRunning(true)
@@ -265,7 +268,7 @@ function AssignPath() {
       </div>
 
       <div className="mx-6 mb-2 text-[12px] text-gray-400"> Terminal Output </div>
-      <div className="bg-black mx-5 mb-5 p-5  rounded-xl text-[12px] text-white h-[300px] whitespace-pre-line overflow-auto">
+      <div className="bg-black mx-5 mb-5 p-5 rounded-xl text-[12px] text-white h-[300px] whitespace-pre-line overflow-auto">
         {terminalOutput}
       </div>
 

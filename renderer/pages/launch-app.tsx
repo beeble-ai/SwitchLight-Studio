@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect } from "react";
 import Head from "next/head";
 import electron from "electron";
 
-import { useRouter } from 'next/router';
+import { useRouter } from "next/router";
 
 const ipcRenderer = electron.ipcRenderer || false;
 
@@ -30,26 +30,32 @@ function LaunchApp() {
 
     // Cleanup on component unmount or when detaching the event listener explicitly.
     return () => {
-      ipcRenderer.removeListener("compare-and-download-engine", handleCompareAndDownload);
+      ipcRenderer.removeListener(
+        "compare-and-download-engine",
+        handleCompareAndDownload
+      );
     };
   }, []);
-
 
   return (
     <React.Fragment>
       <Head>
         <title>SwitchLight Desktop Beta</title>
       </Head>
-      <div className="grid grid-col-1 text-2xl w-full text-center mt-10">
-        <span>⚡ SwitchLight Desktop Beta ⚡</span>
-        <span className="text-[10px]">Ver. XX</span>
-      </div>
 
-      {/* Mode */}
-
-      {/* <div className="flex flex-col items-start gap-4"> */}
-      <div className="flex items-center w-full gap-2">
-        Initializing Engine ... {progress} % Please Wait
+      <div className="flex flex-col gap-2 m-10">
+        <div> Downloading Dependencies... </div>
+        <div className="flex justify-between mb-1">
+          <span className="text-sm font-medium text-blue-400 dark:text-white">
+            {progress}%
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+          <div
+            className="bg-blue-600 h-2.5 rounded-full"
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
       </div>
     </React.Fragment>
   );

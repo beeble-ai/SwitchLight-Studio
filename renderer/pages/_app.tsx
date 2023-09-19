@@ -1,10 +1,17 @@
-import React from 'react'
-import type { AppProps } from 'next/app'
+import React from "react";
+import type { AppProps } from "next/app";
 
-import '../styles/globals.css'
+import "../styles/globals.css";
+import { SLNavbar } from "../components/navbar";
 
 function MyApp({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />
+  return (
+    <>
+      {/* <Providers> */}
+      <SLNavbar />
+      <Component {...pageProps} />
+    </>
+  );
 }
 
-export default MyApp
+export default MyApp;

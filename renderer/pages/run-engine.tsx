@@ -9,11 +9,10 @@ import electron from "electron";
 import { Button, Checkbox, Label } from "flowbite-react";
 
 function RunEngine() {
-
   const ipcRenderer = electron.ipcRenderer || false;
 
   const [openDropdown, setOpenDropdown] = useState(false);
-  const toggleDropdown = () => setOpenDropdown(prevState => !prevState);
+  const toggleDropdown = () => setOpenDropdown((prevState) => !prevState);
 
   const [mode, setMode] = useState("Video"); // Video or Image Sequence
 
@@ -30,8 +29,8 @@ function RunEngine() {
 
   const [terminalOutput, setTerminalOutput] = useState("");
 
-  const [bgRemovalStatus, setBgRemovalStatus] = useState("Not Started")
-  const [derenderStatus, setDerenderStatus] = useState("Not Started")
+  const [bgRemovalStatus, setBgRemovalStatus] = useState("Not Started");
+  const [derenderStatus, setDerenderStatus] = useState("Not Started");
 
   const [isEngineRunning, setIsEngineRunning] = useState(false);
 
@@ -39,8 +38,7 @@ function RunEngine() {
     if (!ipcRenderer) return;
 
     const handleSelectDirectory = (event, data) => {
-
-      setInputFolderPath(data['directoryPath'])
+      setInputFolderPath(data["directoryPath"]);
       ipcRenderer.removeAllListeners("select-path");
     };
 
@@ -52,8 +50,7 @@ function RunEngine() {
     if (!ipcRenderer) return;
 
     const handleSelectDirectory = (event, data) => {
-
-      setOutputFolderPath(data['directoryPath'])
+      setOutputFolderPath(data["directoryPath"]);
       ipcRenderer.removeAllListeners("select-path");
     };
 
@@ -62,58 +59,59 @@ function RunEngine() {
   }
 
   function getProgress(str: string): string | null {
+    if (!str.includes("frames")) return null;
 
-    if (!str.includes('frames')) return null
+    let division = str.split("frames")[0];
+    let currentFrame = division.split("/")[0].split("|")[1].trim();
+    let totalFrame = division.split("/")[1].trim();
 
-    let division = str.split('frames')[0]
-    let currentFrame = division.split('/')[0].split('|')[1].trim()
-    let totalFrame = division.split('/')[1].trim()
-
-    log.info(division, currentFrame, totalFrame)
-    console.log(division)
-    console.log('current frame', currentFrame)
-    console.log('total frame', totalFrame)
+    log.info(division, currentFrame, totalFrame);
+    console.log(division);
+    console.log("current frame", currentFrame);
+    console.log("total frame", totalFrame);
 
     if (totalFrame && currentFrame) {
-      return (Number(currentFrame) / Number(totalFrame) * 100).toFixed(2)
+      return ((Number(currentFrame) / Number(totalFrame)) * 100).toFixed(2);
     } else {
-      return null
+      return null;
     }
   }
 
   useEffect(() => {
     if (mode === "Video") {
-      setInputLabel("Input Video Path: ")
-      setOutputLabel("Output Dir: ")
+      setInputLabel("Input Video Path: ");
+      setOutputLabel("Output Dir: ");
     } else {
-      setInputLabel("Input Image Dir: ")
-      setOutputLabel("Output Dir: ")
+      setInputLabel("Input Image Dir: ");
+      setOutputLabel("Output Dir: ");
     }
-  }, [mode])
+  }, [mode]);
 
   function runBgRemoval() {
     if (!ipcRenderer) return;
 
     const handleRemoveBackground = (event, data) => {
-
-      const progress = getProgress(data["description"])
+      const progress = getProgress(data["description"]);
       if (progress) {
-        setBgRemovalStatus(progress + "%")
+        setBgRemovalStatus(progress + "%");
       } else {
-        setBgRemovalStatus("Loading...")
+        setBgRemovalStatus("Loading...");
       }
 
       // setTerminalOutput(prev => (prev ? prev + "\n" : "") + data["description"]);
-      setTerminalOutput(prev => (prev ? prev : "") + data["description"]);
+      setTerminalOutput((prev) => (prev ? prev : "") + data["description"]);
 
       if (data["isComplete"]) {
         ipcRenderer.removeAllListeners("run-remove-bg");
         runDerender();
       }
-
     };
 
-    ipcRenderer.send("run-remove-bg", { mode: mode, inputDir: inputFolderPath, outputDir: outputFolderPath });
+    ipcRenderer.send("run-remove-bg", {
+      mode: mode,
+      inputDir: inputFolderPath,
+      outputDir: outputFolderPath,
+    });
     ipcRenderer.on("run-remove-bg", handleRemoveBackground);
   }
 
@@ -121,26 +119,35 @@ function RunEngine() {
     if (!ipcRenderer) return;
 
     const handleDerender = (event, data) => {
-
-      const progress = getProgress(data["description"])
+      const progress = getProgress(data["description"]);
       if (progress) {
-        setDerenderStatus(progress + "%")
+        setDerenderStatus(progress + "%");
       } else {
-        setDerenderStatus("Loading...")
+        setDerenderStatus("Loading...");
       }
 
-      setTerminalOutput(prev => (prev ? prev : "") + data["description"]);
+      setTerminalOutput((prev) => (prev ? prev : "") + data["description"]);
 
       if (data["isComplete"]) {
         ipcRenderer.removeAllListeners("run-derender");
-        setIsEngineRunning(false)
+        setIsEngineRunning(false);
       }
     };
 
     if (bgRemovalChecked) {
-      ipcRenderer.send("run-derender", { mode: mode, inputDir: outputFolderPath, bgRemovalChecked: true, outputDir: outputFolderPath });
+      ipcRenderer.send("run-derender", {
+        mode: mode,
+        inputDir: outputFolderPath,
+        bgRemovalChecked: true,
+        outputDir: outputFolderPath,
+      });
     } else {
-      ipcRenderer.send("run-derender", { mode: mode, inputDir: inputFolderPath, bgRemovalChecked: false, outputDir: outputFolderPath });
+      ipcRenderer.send("run-derender", {
+        mode: mode,
+        inputDir: inputFolderPath,
+        bgRemovalChecked: false,
+        outputDir: outputFolderPath,
+      });
     }
     ipcRenderer.on("run-derender", handleDerender);
   }
@@ -150,21 +157,19 @@ function RunEngine() {
       <Head>
         <title>SwitchLight Desktop Beta</title>
       </Head>
-      <div className="grid grid-col-1 text-2xl w-full text-center mt-10">
-        <span>⚡ SwitchLight Desktop Beta ⚡</span>
-        <span className="text-[10px]">Ver. XX</span>
-      </div>
-
 
       <div className="flex items-center gap-4 mt-10 mx-2">
-
         {/* Dropdown Button */}
         <div className="relative">
           <button
             className="w-[150px] text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
             type="button"
             disabled={isEngineRunning}
-            style={isEngineRunning ? { cursor: "not-allowed" } : { cursor: "pointer" }}
+            style={
+              isEngineRunning
+                ? { cursor: "not-allowed" }
+                : { cursor: "pointer" }
+            }
             onClick={toggleDropdown}
           >
             <div className="flex-1 text-center">
@@ -186,7 +191,11 @@ function RunEngine() {
               />
             </svg>
           </button>
-          <div className={`absolute z-10 mt-2 w-[150px] ${openDropdown ? "" : "hidden"} bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700 dark:divide-gray-600`}>
+          <div
+            className={`absolute z-10 mt-2 w-[150px] ${
+              openDropdown ? "" : "hidden"
+            } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700 dark:divide-gray-600`}
+          >
             <button
               className="flex items-center justify-center w-[150px] py-3 text-sm text-gray-900 dark:text-white"
               onClick={() => {
@@ -209,16 +218,20 @@ function RunEngine() {
         </div>
 
         {/* Background Removal Checkbox */}
-        {mode !== "Video" &&
+        {mode !== "Video" && (
           <div className="flex items-center gap-2">
-            <Checkbox id="Remove Background" disabled={isEngineRunning} checked={bgRemovalChecked}
-              onChange={handleBgRemovalCheckboxChange} />
+            <Checkbox
+              id="Remove Background"
+              disabled={isEngineRunning}
+              checked={bgRemovalChecked}
+              onChange={handleBgRemovalCheckboxChange}
+            />
             <Label className="text-white" htmlFor="Remove Background">
               Remove Background
             </Label>
-          </div>}
+          </div>
+        )}
       </div>
-
 
       <div className="flex flex-col mt-10">
         <FolderPicker
@@ -238,13 +251,23 @@ function RunEngine() {
         <br />
         <FolderPicker
           label={"Background Removed\nOutput Dir:"}
-          path={!bgRemovalChecked ? "" : outputFolderPath ? outputFolderPath + "\\bgremoval" : ""}
+          path={
+            !bgRemovalChecked
+              ? ""
+              : outputFolderPath
+              ? outputFolderPath + "\\bgremoval"
+              : ""
+          }
           buttonLabel={bgRemovalStatus}
           onClick={null}
         />
         <FolderPicker
           label={"Derendered \nOutput Dir: "}
-          path={outputFolderPath ? outputFolderPath + "\\{ normal,albedo,roughness,specular}" : ""}
+          path={
+            outputFolderPath
+              ? outputFolderPath + "\\{ normal,albedo,roughness,specular}"
+              : ""
+          }
           buttonLabel={derenderStatus}
           onClick={null}
         />
@@ -254,28 +277,33 @@ function RunEngine() {
       <div className="flex justify-end px-4 mt-3">
         <>
           <button
-            className={`${isEngineRunning ? "bg-gray-400" : "bg-yellow-400"} p-2 rounded-lg text-black w-[95px]`}
+            className={`${
+              isEngineRunning ? "bg-gray-400" : "bg-yellow-400"
+            } p-2 rounded-lg text-black w-[95px]`}
             disabled={isEngineRunning}
             onClick={() => {
-              setIsEngineRunning(true)
+              setIsEngineRunning(true);
               if (bgRemovalChecked) {
-                runBgRemoval()
+                runBgRemoval();
               } else {
-                runDerender()
+                runDerender();
               }
             }}
-          > <p className="text-[13px]">Run </p>
+          >
+            {" "}
+            <p className="text-[13px]">Run </p>
           </button>
         </>
       </div>
 
-      <div className="mx-6 mb-2 text-[12px] text-gray-400"> Terminal Output </div>
+      <div className="mx-6 mb-2 text-[12px] text-gray-400">
+        {" "}
+        Terminal Output{" "}
+      </div>
       <div className="bg-black mx-5 mb-5 p-5 rounded-xl text-[12px] text-white h-[300px] whitespace-pre-line overflow-auto">
         {terminalOutput}
       </div>
-
-
-    </React.Fragment >
+    </React.Fragment>
   );
 }
 

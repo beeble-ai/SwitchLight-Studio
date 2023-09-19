@@ -36,8 +36,7 @@ if (isProd) {
   // Check for update on startup
   if (isProd) {
     autoUpdater.checkForUpdatesAndNotify();
-  };
-
+  }
 })();
 
 app.on("window-all-closed", () => {
@@ -116,7 +115,11 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
       } else {
         // For matching versions, download only the files that do not exist in the local directory
         filesToDownload = remoteFiles.filter((file) => {
-          const filePath = path.join(path.dirname(app.getAppPath()), saveDirectory, file);
+          const filePath = path.join(
+            path.dirname(app.getAppPath()),
+            saveDirectory,
+            file
+          );
           return !fs.existsSync(filePath);
         });
       }
@@ -132,17 +135,17 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
   // Delete all .tmp files in the engine and sample_images directories
   const directoryPaths = [
     path.join(path.dirname(app.getAppPath()), "./engine"),
-    path.join(path.dirname(app.getAppPath()), "./sample_images")
+    path.join(path.dirname(app.getAppPath()), "./sample_images"),
   ];
 
-  directoryPaths.forEach(dirPath => {
-    // pass if dirPath not exists
-    if (!fs.existsSync(dirPath)) {
-      return;
-    }
-    fs.readdirSync(dirPath).forEach(file => {
-      if (file.endsWith('.tmp')) {
-        fs.unlinkSync(path.join(dirPath, file));
+  directoryPaths.forEach((dirPath) => {
+    if (!fs.existsSync(dirPath)) return; // Using 'return' instead of 'continue' in a forEach loop
+
+    const files = fs.readdirSync(dirPath);
+    files.forEach((file) => {
+      if (file.endsWith(".tmp")) {
+        const filePath = path.join(dirPath, file);
+        fs.unlinkSync(filePath);
       }
     });
   });
@@ -179,8 +182,16 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
       }
 
       for (const file of filesToDownload) {
-        const tempFilePath = path.join(path.dirname(app.getAppPath()), saveDirectory, file + ".tmp");
-        const finalFilePath = path.join(path.dirname(app.getAppPath()), saveDirectory, file);
+        const tempFilePath = path.join(
+          path.dirname(app.getAppPath()),
+          saveDirectory,
+          file + ".tmp"
+        );
+        const finalFilePath = path.join(
+          path.dirname(app.getAppPath()),
+          saveDirectory,
+          file
+        );
         const url = `https://desktop.beeble.ai/engine/${basePath}/${file}`;
         const response = await fetch(url);
 
@@ -225,29 +236,36 @@ ipcMain.on("api-key-read", (event, apiKey) => {
   const fs = require("fs");
   const path = require("path");
 
-  const apiKeyFilePath = path.join(path.dirname(app.getAppPath()), "api-key.txt");
+  const apiKeyFilePath = path.join(
+    path.dirname(app.getAppPath()),
+    "api-key.txt"
+  );
   // Check if the file exists.
   if (fs.existsSync(apiKeyFilePath)) {
     // If it does, read the content from the file.
-    const apiKeyContent = fs.readFileSync(apiKeyFilePath, { encoding: "utf-8" });
+    const apiKeyContent = fs.readFileSync(apiKeyFilePath, {
+      encoding: "utf-8",
+    });
     // Reply with the content read from the file.
     event.reply("api-key-read", { keyexists: true, key: apiKeyContent });
   } else {
     event.reply("api-key-read", { keyexists: false });
   }
-
 });
 
 ipcMain.on("api-key-submitted", (event, apiKey) => {
   const fs = require("fs");
   const path = require("path");
 
-  const apiKeyFilePath = path.join(path.dirname(app.getAppPath()), "api-key.txt");
+  const apiKeyFilePath = path.join(
+    path.dirname(app.getAppPath()),
+    "api-key.txt"
+  );
   fs.writeFileSync(apiKeyFilePath, apiKey);
   event.reply("api-key-submitted", "success");
-
 });
 
+// api key 인증 및 모델 다운로드 (+ 로드)
 ipcMain.on("initialize-engine", async (event) => {
   const fs = require("fs");
   const path = require("path");
@@ -258,7 +276,10 @@ ipcMain.on("initialize-engine", async (event) => {
   let exePath = await path.join(exeFolderPath, "engine.exe");
 
   // Read the api-key.txt file
-  const apiKeyFilePath = path.join(path.dirname(app.getAppPath()), "api-key.txt");
+  const apiKeyFilePath = path.join(
+    path.dirname(app.getAppPath()),
+    "api-key.txt"
+  );
   const apiKey = fs.readFileSync(apiKeyFilePath, "utf8");
 
   // Check if model update is required
@@ -280,22 +301,37 @@ ipcMain.on("initialize-engine", async (event) => {
   // Set the modelPath based on the mode
   const child = require("child_process").exec(command, option);
 
-  child.stdout.on('data', (data) => {
-    event.reply("initialize-engine", { description: data, modelUpdateRequired: modelUpdateRequired, isProgress: false })
+  child.stdout.on("data", (data) => {
+
+    event.reply("initialize-engine", {
+      description: data,
+      modelUpdateRequired: modelUpdateRequired,
+      isProgress: false,
+    });
   });
 
-
-  child.stderr.on('data', (data) => {
-    event.reply("initialize-engine", { description: data, isProgress: true })
+  child.stderr.on("data", (data) => {
+    event.reply("initialize-engine", { description: data, isProgress: true });
   });
+});
 
-  // when finished overwrite local config with remote config
+ipcMain.on("update-engine-config", async (event) => {
+  const fs = require("fs");
+  const path = require("path");
+
+  // Check if model update is required
+  const response = await fetch(
+    "https://desktop.beeble.ai/engine/engine-config.json"
+  );
+
+  const remoteConfig = await response.json();
+
   fs.writeFileSync(path.join(app.getAppPath(), "main", "engine-config.json"), JSON.stringify(remoteConfig, null, 2));
 
+  event.reply("update-engine-config", { isComplete: true });
 });
 
 ipcMain.on("select-path", async (event, type) => {
-
   const fs = require("fs");
   const { dialog } = require("electron");
 
@@ -303,12 +339,10 @@ ipcMain.on("select-path", async (event, type) => {
   if (type === "file") {
     result = await dialog.showOpenDialog({
       properties: ["openFile"],
-
     });
   } else if (type === "directory") {
     result = await dialog.showOpenDialog({
       properties: ["openDirectory"],
-
     });
   } else {
     throw new Error("Invalid type");
@@ -321,10 +355,9 @@ ipcMain.on("select-path", async (event, type) => {
   const directoryPath = result.filePaths[0];
   // const files = fs.readdirSync(directoryPath);
 
-  event.reply("select-path", { directoryPath: directoryPath })
+  event.reply("select-path", { directoryPath: directoryPath });
   // , numFiles: files.length });
-
-})
+});
 
 ipcMain.on("run-remove-bg", async (event, args) => {
   const fs = require("fs");
@@ -337,12 +370,15 @@ ipcMain.on("run-remove-bg", async (event, args) => {
   let modelPath = await path.join(enginePath, "switchLight.enc");
 
   // Read the api-key.txt file
-  const apiKeyFilePath = path.join(path.dirname(app.getAppPath()), "api-key.txt");
+  const apiKeyFilePath = path.join(
+    path.dirname(app.getAppPath()),
+    "api-key.txt"
+  );
   const apiKey = fs.readFileSync(apiKeyFilePath, "utf8");
 
   const bgRemovalOutputDir = path.join(args.outputDir, "bgremoval");
 
-  let command = ""
+  let command = "";
   if (args.mode === "Video") {
     // Construct the command
     command = `${exePath} -m removebg -p ${modelPath} -i ${args.inputDir} -o ${bgRemovalOutputDir} -k ${apiKey}`;
@@ -355,18 +391,17 @@ ipcMain.on("run-remove-bg", async (event, args) => {
   // Set the modelPath based on the mode
   const child = require("child_process").exec(command, option);
 
-  child.stdout.on('data', (data) => {
-    console.log(data)
-    if (data.includes('55/55 frames')) {
-      event.reply("run-remove-bg", { description: data, isComplete: true })
+  child.stdout.on("data", (data) => {
+    console.log(data);
+    if (data.includes("55/55 frames")) {
+      event.reply("run-remove-bg", { description: data, isComplete: true });
     } else {
-      event.reply("run-remove-bg", { description: data, isComplete: false })
+      event.reply("run-remove-bg", { description: data, isComplete: false });
     }
   });
 
-  child.stderr.on('data', (data) => {
-    console.log(data)
-
+  child.stderr.on("data", (data) => {
+    console.log(data);
   });
 });
 
@@ -381,7 +416,10 @@ ipcMain.on("run-derender", async (event, args) => {
   let modelPath = await path.join(enginePath, "switchLight.enc");
 
   // Read the api-key.txt file
-  const apiKeyFilePath = path.join(path.dirname(app.getAppPath()), "api-key.txt");
+  const apiKeyFilePath = path.join(
+    path.dirname(app.getAppPath()),
+    "api-key.txt"
+  );
   const apiKey = fs.readFileSync(apiKeyFilePath, "utf8");
 
   let bgRemovalDir;
@@ -391,7 +429,7 @@ ipcMain.on("run-derender", async (event, args) => {
     bgRemovalDir = args.inputDir;
   }
 
-  let command = ""
+  let command = "";
   if (args.mode === "Video") {
     // Construct the command
     command = `${exePath} -m derender -p ${modelPath} -i ${bgRemovalDir} -o ${args.outputDir} -k ${apiKey}`;
@@ -404,13 +442,11 @@ ipcMain.on("run-derender", async (event, args) => {
   // Set the modelPath based on the mode
   const child = require("child_process").exec(command, option);
 
-  child.stdout.on('data', (data) => {
-
-    if (data.includes('55/55 frames')) {
-      event.reply("run-derender", { description: data, isComplete: true })
+  child.stdout.on("data", (data) => {
+    if (data.includes("55/55 frames")) {
+      event.reply("run-derender", { description: data, isComplete: true });
     } else {
-      event.reply("run-derender", { description: data, isComplete: false })
+      event.reply("run-derender", { description: data, isComplete: false });
     }
   });
-
 });

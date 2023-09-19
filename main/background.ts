@@ -13,7 +13,9 @@ if (isProd) {
   app.setPath("userData", `${app.getPath("userData")} (development)`);
 }
 
-initializeAutoUpdater(); // Set up the auto-updater event listeners
+if (isProd) {
+  initializeAutoUpdater(); // Set up the auto-updater event listeners
+}
 
 (async () => {
   await app.whenReady();
@@ -32,7 +34,10 @@ initializeAutoUpdater(); // Set up the auto-updater event listeners
   }
 
   // Check for update on startup
-  autoUpdater.checkForUpdatesAndNotify();
+  if (isProd) {
+    autoUpdater.checkForUpdatesAndNotify();
+  };
+
 })();
 
 app.on("window-all-closed", () => {

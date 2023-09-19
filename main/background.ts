@@ -25,6 +25,9 @@ if (isProd) {
     height: 600,
   });
 
+  // Remove the menu bar for Windows
+  mainWindow.setMenu(null);
+
   if (isProd) {
     await mainWindow.loadURL("app://./launch-app.html");
   } else {

@@ -28,6 +28,8 @@ function InitializeEngine() {
     const handleInitializeEngine = (event, data) => {
       const description = data["description"];
 
+      console.log(description)
+
       if (data["isProgress"]) {
         setProgress(getProgress(description));
       }
@@ -39,11 +41,11 @@ function InitializeEngine() {
         ipcRenderer.on("update-engine-config", (event, data) => {
           if (data.isComplete) {
             ipcRenderer.removeAllListeners("update-engine-config");
+
+            // Redirect to Run Engine
+            router.push("/run-engine");
           }
         })
-
-        // Redirect to Run Engine
-        router.push("/run-engine");
       }
     };
 

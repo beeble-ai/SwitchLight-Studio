@@ -23,7 +23,6 @@ if (isProd) {
   const mainWindow = createWindow("main", {
     width: 1000,
     height: 600,
-    frame: false
   });
 
   if (isProd) {
@@ -44,10 +43,23 @@ app.on("window-all-closed", () => {
   app.quit();
 });
 
+function loadLocalConfig() {
+  const fs = require("fs");
+  const path = require("path");
+  const filePath = path.join(app.getAppPath(), 'engine-config.json');
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(content);
+  } catch (err) {
+    console.error('Failed to load engine-config.json:', err.message);
+    return null;  // or some default config
+  }
+}
+
 async function isModelUpdateRequired(remoteModelVersion) {
   const fs = require("fs");
   const path = require("path");
-  const localConfig = require("./engine-config.json");
+  const localConfig = loadLocalConfig();
   const localModelVersion = Object.keys(localConfig["model"])[0];
 
   let modelUpdateRequired = false;
@@ -58,8 +70,6 @@ async function isModelUpdateRequired(remoteModelVersion) {
     log.info("Model version is different");
     modelUpdateRequired = true;
   }
-
-  // path.join(path.dirname(app.getAppPath()), 'engine', file);
 
   // If model is not saved in local, then update the model
   for (const file of localConfig["model"][localModelVersion]) {
@@ -83,7 +93,7 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
   log.info(__dirname);
   log.info(app.getAppPath());
 
-  const localConfig = require("./engine-config.json");
+  const localConfig = loadLocalConfig();
 
   const response = await fetch(
     "https://desktop.beeble.ai/engine/engine-config.json"
@@ -329,7 +339,7 @@ ipcMain.on("update-engine-config", async (event) => {
 
   const remoteConfig = await response.json();
 
-  fs.writeFileSync(path.join(app.getAppPath(), "main", "engine-config.json"), JSON.stringify(remoteConfig, null, 2));
+  fs.writeFileSync(path.join(app.getAppPath(), "engine-config.json"), JSON.stringify(remoteConfig, null, 2));
 
   event.reply("update-engine-config", { isComplete: true });
 });

@@ -41,7 +41,7 @@ function InitializeEngine() {
 
             if (description.includes('complete')) {
                 ipcRenderer.removeAllListeners("initialize-engine");
-                router.push("/assign-path");
+                router.push("/run-engine");
             }
         };
 

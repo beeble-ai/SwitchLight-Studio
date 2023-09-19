@@ -26,10 +26,10 @@ if (isProd) {
   });
 
   if (isProd) {
-    await mainWindow.loadURL("app://./home.html");
+    await mainWindow.loadURL("app://./launch-app.html");
   } else {
     const port = process.argv[2];
-    await mainWindow.loadURL(`http://localhost:${port}/home`);
+    await mainWindow.loadURL(`http://localhost:${port}/launch-app`);
     mainWindow.webContents.openDevTools();
   }
 
@@ -129,6 +129,20 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
     }
   }
 
+  // Delete all .tmp files in the engine and sample_images directories
+  const directoryPaths = [
+    path.join(path.dirname(app.getAppPath()), "./engine"),
+    path.join(path.dirname(app.getAppPath()), "./sample_images")
+  ];
+
+  directoryPaths.forEach(dirPath => {
+    fs.readdirSync(dirPath).forEach(file => {
+      if (file.endsWith('.tmp')) {
+        fs.unlinkSync(path.join(dirPath, file));
+      }
+    });
+  });
+
   // Compute totalFiles and downloadedFiles based on filesToDownloadMap
   let totalFiles = 0;
   let downloadedFiles = 0;
@@ -161,11 +175,12 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
       }
 
       for (const file of filesToDownload) {
-        const filePath = path.join(path.dirname(app.getAppPath()), saveDirectory, file);
+        const tempFilePath = path.join(path.dirname(app.getAppPath()), saveDirectory, file + ".tmp");
+        const finalFilePath = path.join(path.dirname(app.getAppPath()), saveDirectory, file);
         const url = `https://desktop.beeble.ai/engine/${basePath}/${file}`;
         const response = await fetch(url);
 
-        log.info(filePath, url, response);
+        log.info(tempFilePath, url, response);
 
         if (!response.ok) {
           log.info(`Failed to download file`);
@@ -175,7 +190,7 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
         }
 
         // Create a directory if it doesn't exist
-        const parentDirectory = path.dirname(filePath);
+        const parentDirectory = path.dirname(tempFilePath);
         log.info(parentDirectory, url, response);
         if (!fs.existsSync(parentDirectory)) {
           fs.mkdirSync(parentDirectory, { recursive: true });
@@ -183,7 +198,11 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
         }
 
         // Download and save the file to the specified directory
-        await streamPipeline(response.body, fs.createWriteStream(filePath));
+        await streamPipeline(response.body, fs.createWriteStream(tempFilePath));
+
+        // After download completely done, rename from temporary path to final path
+        fs.renameSync(tempFilePath, finalFilePath);
+
         downloadedFiles++;
         const percentage = Math.floor((downloadedFiles / totalFiles) * 100);
         log.info(`Downloaded ${percentage}%`);
@@ -268,22 +287,24 @@ ipcMain.on("initialize-engine", async (event) => {
 
 });
 
-ipcMain.on("select-directory", async (event, type) => {
+ipcMain.on("select-path", async (event, type) => {
 
   const fs = require("fs");
   const { dialog } = require("electron");
 
   let result = null;
-  if (type === "input") {
+  if (type === "file") {
     result = await dialog.showOpenDialog({
       properties: ["openFile"],
 
     });
-  } else {
+  } else if (type === "directory") {
     result = await dialog.showOpenDialog({
       properties: ["openDirectory"],
 
     });
+  } else {
+    throw new Error("Invalid type");
   }
 
   if (result.canceled) {
@@ -293,7 +314,7 @@ ipcMain.on("select-directory", async (event, type) => {
   const directoryPath = result.filePaths[0];
   // const files = fs.readdirSync(directoryPath);
 
-  event.reply("select-directory", { directoryPath: directoryPath })
+  event.reply("select-path", { directoryPath: directoryPath })
   // , numFiles: files.length });
 
 })

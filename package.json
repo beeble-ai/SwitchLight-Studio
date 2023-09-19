@@ -2,7 +2,7 @@
   "private": false,
   "name": "my-nextron-app",
   "description": "My application description",
-  "version": "1.5.6",
+  "version": "1.5.8",
   "author": "Beeble <admin@beeble.ai>",
   "main": "app/background.js",
   "scripts": {

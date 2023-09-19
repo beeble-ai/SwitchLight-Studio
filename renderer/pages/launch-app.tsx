@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 
 const ipcRenderer = electron.ipcRenderer || false;
 
-function Home() {
+function LaunchApp() {
   const router = useRouter(); // <-- Call the useRouter hook
 
   const [progress, setProgress] = React.useState("0");
@@ -55,4 +55,4 @@ function Home() {
   );
 }
 
-export default Home;
+export default LaunchApp;

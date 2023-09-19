@@ -4,14 +4,14 @@ import GradientButton from './gradient-button';
 interface FolderPickerProps {
     label: string;
     path: string;
-    disabled?: boolean;
+    disabled?: boolean | false;
     onClick: () => void;
     buttonLabel: string;
 }
 
 const FolderPicker = ((props: FolderPickerProps) => {
     const { label, path, disabled, onClick, buttonLabel } = props;
-
+    console.log("FolderPicker: ", label, path, disabled, onClick, buttonLabel);
     return (
         <div className="flex justify-between w-full gap-2 p-2 text-[12px]">
             {/* label (parse whenever \n appears) */}

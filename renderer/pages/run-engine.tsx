@@ -8,7 +8,7 @@ import electron from "electron";
 
 import { Button, Checkbox, Label } from "flowbite-react";
 
-function AssignPath() {
+function RunEngine() {
 
   const ipcRenderer = electron.ipcRenderer || false;
 
@@ -41,11 +41,11 @@ function AssignPath() {
     const handleSelectDirectory = (event, data) => {
 
       setInputFolderPath(data['directoryPath'])
-      ipcRenderer.removeAllListeners("select-directory");
+      ipcRenderer.removeAllListeners("select-path");
     };
 
-    ipcRenderer.send("select-directory", "input");
-    ipcRenderer.on("select-directory", handleSelectDirectory);
+    ipcRenderer.send("select-path", mode === "Video" ? "file" : "directory");
+    ipcRenderer.on("select-path", handleSelectDirectory);
   }
 
   function handleOutputFolderChange() {
@@ -54,11 +54,11 @@ function AssignPath() {
     const handleSelectDirectory = (event, data) => {
 
       setOutputFolderPath(data['directoryPath'])
-      ipcRenderer.removeAllListeners("select-directory");
+      ipcRenderer.removeAllListeners("select-path");
     };
 
-    ipcRenderer.send("select-directory", "output");
-    ipcRenderer.on("select-directory", handleSelectDirectory);
+    ipcRenderer.send("select-path", "directory");
+    ipcRenderer.on("select-path", handleSelectDirectory);
   }
 
   function getProgress(str: string): string | null {
@@ -80,7 +80,6 @@ function AssignPath() {
       return null
     }
   }
-
 
   useEffect(() => {
     if (mode === "Video") {
@@ -236,35 +235,38 @@ function AssignPath() {
           disabled={isEngineRunning}
           onClick={handleOutputFolderChange}
         />
+        <br />
         <FolderPicker
           label={"Background Removed\nOutput Dir:"}
-          path={outputFolderPath ? outputFolderPath + "\\bgremoval" : ""}
+          path={!bgRemovalChecked ? "" : outputFolderPath ? outputFolderPath + "\\bgremoval" : ""}
           buttonLabel={bgRemovalStatus}
           onClick={null}
         />
         <FolderPicker
           label={"Derendered \nOutput Dir: "}
-          path={outputFolderPath ? outputFolderPath + "\\{ normal,albedo,... }" : ""}
+          path={outputFolderPath ? outputFolderPath + "\\{ normal,albedo,roughness,specular}" : ""}
           buttonLabel={derenderStatus}
           onClick={null}
         />
       </div>
 
       {/* Run Engine button */}
-      <div className="flex justify-end mx-5 mt-5">
-        <Button
-          className={`${isEngineRunning ? "bg-gray-400" : "bg-yellow-400"} text-black w-[100px]`}
-          disabled={isEngineRunning}
-          onClick={() => {
-            setIsEngineRunning(true)
-            if (bgRemovalChecked) {
-              runBgRemoval()
-            } else {
-              runDerender()
-            }
-          }}
-        > Run
-        </Button>
+      <div className="flex justify-end px-4 mt-3">
+        <>
+          <button
+            className={`${isEngineRunning ? "bg-gray-400" : "bg-yellow-400"} p-2 rounded-lg text-black w-[95px]`}
+            disabled={isEngineRunning}
+            onClick={() => {
+              setIsEngineRunning(true)
+              if (bgRemovalChecked) {
+                runBgRemoval()
+              } else {
+                runDerender()
+              }
+            }}
+          > <p className="text-[13px]">Run </p>
+          </button>
+        </>
       </div>
 
       <div className="mx-6 mb-2 text-[12px] text-gray-400"> Terminal Output </div>
@@ -277,4 +279,4 @@ function AssignPath() {
   );
 }
 
-export default AssignPath;
+export default RunEngine;

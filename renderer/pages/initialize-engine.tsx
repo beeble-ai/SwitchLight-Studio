@@ -8,8 +8,7 @@ const ipcRenderer = electron.ipcRenderer || false;
 
 function InitializeEngine() {
   const router = useRouter();
-  const [description, setDescription] = React.useState("");
-  const [progress, setProgress] = React.useState<string | undefined>(undefined);
+  const [progress, setProgress] = React.useState<string | undefined>("0");
 
   function getProgress(str: string): string | null {
     if (/\b(?:100|[1-9]?[0-9])\b/.test(str)) {
@@ -31,11 +30,7 @@ function InitializeEngine() {
 
       if (data["isProgress"]) {
         setProgress(getProgress(description));
-      } else {
-        setProgress(undefined);
-        setDescription(description);
       }
-
       if (description.includes("complete")) {
         ipcRenderer.removeAllListeners("initialize-engine");
 
@@ -68,17 +63,21 @@ function InitializeEngine() {
 
       <div className="flex flex-col gap-2 m-10">
         <div> Initializing Engine... </div>
-        <div className="flex justify-between mb-1">
-          <span className="text-sm font-medium text-blue-400 dark:text-white">
-            {progress}%
-          </span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-          <div
-            className="bg-blue-600 h-2.5 rounded-full"
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
+
+        {progress &&
+          <div>
+            <div className="flex justify-between mb-1">
+              <span className="text-sm font-medium text-blue-400 dark:text-white">
+                {progress}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+              <div
+                className="bg-blue-600 h-2.5 rounded-full"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+          </div>}
       </div>
     </React.Fragment>
   );

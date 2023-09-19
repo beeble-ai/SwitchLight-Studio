@@ -33,36 +33,34 @@ function Account() {
         <div className="text-[20px] mb-5"> Setting </div>
 
         <div className="text-gray-200 text-[12px]"> API Key </div>
-        <TextInput
-          id="large"
-          type="text"
-          className=" text-white w-full"
-          sizing="lg"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          readOnly={!isEditing}
-        />
+
+        {isEditing ? (
+          <input
+            type="text"
+            id="api_key"
+            className="bg-gray-white text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            required></input>
+        ) : (
+          <input
+            type="text"
+            className="bg-gray-400 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 cursor-not-allowed"
+            value={apiKey}
+            disabled></input>
+        )}
+
         <div className="flex justify-center items-center mt-10">
-          {isEditing ? (
-            <button
-              type="submit"
-              className="btn-blue"
-              onClick={() => setIsEditing(false)}
-            >
-              Edit
-            </button>
-          ) : (
-            <button
-              type="submit"
-              className="btn-blue"
-              onClick={() => setIsEditing(true)}
-            >
-              Save
-            </button>
-          )}
+          <button
+            type="submit"
+            className="btn-blue"
+            onClick={() => setIsEditing(!isEditing)}
+          >
+            <p>{isEditing ? "Save" : "Edit"}</p>
+          </button>
         </div>
       </div>
-    </React.Fragment>
+    </React.Fragment >
   );
 }
 

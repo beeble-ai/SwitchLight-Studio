@@ -318,6 +318,8 @@ ipcMain.on("initialize-engine", async (event) => {
 ipcMain.on("update-engine-config", async (event) => {
   const fs = require("fs");
   const path = require("path");
+  const fetch = require("node-fetch");
+
 
   // Check if model update is required
   const response = await fetch(

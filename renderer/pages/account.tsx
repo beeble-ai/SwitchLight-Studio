@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import electron from "electron";
 
-import { Label, TextInput } from "flowbite-react";
-
 const ipcRenderer = electron.ipcRenderer || false;
 
 function Account() {

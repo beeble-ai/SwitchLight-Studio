@@ -1,6 +1,9 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import Head from "next/head";
 import FolderPicker from "../components/folder-picker";
+
+import { MdInfoOutline } from "react-icons/md";
+import { AiOutlineClose } from "react-icons/ai";
 
 import * as log from "electron-log";
 
@@ -10,6 +13,8 @@ import { Button, Checkbox, Label } from "flowbite-react";
 
 function RunEngine() {
   const ipcRenderer = electron.ipcRenderer || false;
+
+  const [openModal, setOpenModal] = useState(false);
 
   const [openDropdown, setOpenDropdown] = useState(false);
   const toggleDropdown = () => setOpenDropdown((prevState) => !prevState);
@@ -65,11 +70,6 @@ function RunEngine() {
     let currentFrame = division.split("/")[0].split("|")[1].trim();
     let totalFrame = division.split("/")[1].trim();
 
-    log.info(division, currentFrame, totalFrame);
-    console.log(division);
-    console.log("current frame", currentFrame);
-    console.log("total frame", totalFrame);
-
     if (totalFrame && currentFrame) {
       return ((Number(currentFrame) / Number(totalFrame)) * 100).toFixed(2);
     } else {
@@ -77,7 +77,7 @@ function RunEngine() {
     }
   }
 
-  useEffect(() => {
+  useMemo(() => {
     if (mode === "Video") {
       setInputLabel("Input Video Path: ");
       setOutputLabel("Output Dir: ");
@@ -85,6 +85,13 @@ function RunEngine() {
       setInputLabel("Input Image Dir: ");
       setOutputLabel("Output Dir: ");
     }
+    // reset status
+    setBgRemovalStatus("Not Started");
+    setDerenderStatus("Not Started");
+    setTerminalOutput("");
+    setInputFolderPath("");
+    setOutputFolderPath("");
+
   }, [mode]);
 
   function runBgRemoval() {
@@ -131,6 +138,7 @@ function RunEngine() {
       if (data["isComplete"]) {
         ipcRenderer.removeAllListeners("run-derender");
         setIsEngineRunning(false);
+        setOpenModal(true)
       }
     };
 
@@ -192,9 +200,8 @@ function RunEngine() {
             </svg>
           </button>
           <div
-            className={`absolute z-10 mt-2 w-[150px] ${
-              openDropdown ? "" : "hidden"
-            } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700 dark:divide-gray-600`}
+            className={`absolute z-1 mt-2 w-[150px] ${openDropdown ? "" : "hidden"
+              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700 dark:divide-gray-600`}
           >
             <button
               className="flex items-center justify-center w-[150px] py-3 text-sm text-gray-900 dark:text-white"
@@ -255,8 +262,8 @@ function RunEngine() {
             !bgRemovalChecked
               ? ""
               : outputFolderPath
-              ? outputFolderPath + "\\bgremoval"
-              : ""
+                ? outputFolderPath + "\\bgremoval"
+                : ""
           }
           buttonLabel={bgRemovalStatus}
           onClick={null}
@@ -274,26 +281,32 @@ function RunEngine() {
       </div>
 
       {/* Run Engine button */}
-      <div className="flex justify-end px-4 mt-3">
-        <>
-          <button
-            className={`${
-              isEngineRunning ? "bg-gray-400" : "bg-yellow-400"
+      <div className="flex justify-end px-4 mt-3 gap-2">
+        <button
+          className={`${isEngineRunning || !isEngineRunning && derenderStatus === "100%" ? "bg-gray-400" : "bg-yellow-400"
             } p-2 rounded-lg text-black w-[95px]`}
-            disabled={isEngineRunning}
-            onClick={() => {
-              setIsEngineRunning(true);
-              if (bgRemovalChecked) {
-                runBgRemoval();
-              } else {
-                runDerender();
-              }
-            }}
-          >
-            {" "}
-            <p className="text-[13px]">Run </p>
-          </button>
-        </>
+          disabled={isEngineRunning || !isEngineRunning && derenderStatus === "100%"}
+          onClick={() => {
+            setIsEngineRunning(true);
+            if (bgRemovalChecked) {
+              runBgRemoval();
+            } else {
+              runDerender();
+            }
+          }}
+        >
+          {" "}
+          <p className="font-bold text-[12px]">Run</p>
+        </button>
+        <button
+          className={`${isEngineRunning ? "bg-gray-400" : "bg-yellow-400"
+            } p-2 rounded-lg text-black w-[95px]`}
+          disabled={isEngineRunning}
+          onClick={() => { }}
+        >
+          {" "}
+          <p className="font-bold text-[12px]">Launch SwitchLight </p>
+        </button>
       </div>
 
       <div className="mx-6 mb-2 text-[12px] text-gray-400">
@@ -302,6 +315,31 @@ function RunEngine() {
       </div>
       <div className="bg-black mx-5 mb-5 p-5 rounded-xl text-[12px] text-white h-[300px] whitespace-pre-line overflow-auto">
         {terminalOutput}
+      </div>
+
+      <div id="popup-modal" className={`flex justify-center items-center z-100000 p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full absolute top-0 left-0 w-full ${openModal ? "" : "hidden"}`}>
+        <div className="relative w-full max-w-md max-h-full">
+          <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
+            <button
+              type="button"
+              onClick={() => setOpenModal(!openModal)}
+              className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center" data-modal-hide="popup-modal">
+              <AiOutlineClose className="w-5 h-5" />
+            </button>
+            <div className="p-6 text-center">
+              <MdInfoOutline className="w-16 h-16 mx-auto text-blue-600 mb-5" />
+              <h3 className="mb-10 text-lg font-normal text-gray-900">
+                De-Rendering is finished! <br></br>
+                View the results in the output directories.</h3>
+              <button
+                onClick={() => setOpenModal(!openModal)}
+                type="button"
+                className="text-white bg-blue-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center mr-2">
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </React.Fragment>
   );

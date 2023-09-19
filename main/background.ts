@@ -64,8 +64,8 @@ async function isModelUpdateRequired(remoteModelVersion) {
   // If model is not saved in local, then update the model
   for (const file of localConfig["model"][localModelVersion]) {
     if (!fs.existsSync(path.join(path.dirname(app.getAppPath()), 'engine', file))) {
-      console.log("Model file is missing", file);
-      log.info("Model file is missing", file);
+      console.log("Model file is missing, start Download", file);
+      log.info("Model file is missing, start Download", file);
       modelUpdateRequired = true;
       break; // No need to continue checking further once one file is found missing.
     }
@@ -136,6 +136,10 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
   ];
 
   directoryPaths.forEach(dirPath => {
+    // pass if dirPath not exists
+    if (!fs.existsSync(dirPath)) {
+      return;
+    }
     fs.readdirSync(dirPath).forEach(file => {
       if (file.endsWith('.tmp')) {
         fs.unlinkSync(path.join(dirPath, file));
@@ -251,7 +255,7 @@ ipcMain.on("initialize-engine", async (event) => {
 
   // Get engine executable path
   let exeFolderPath = await path.join(path.dirname(app.getAppPath()), "engine");
-  let exePath = await path.join(exeFolderPath, "SwitchLight.exe");
+  let exePath = await path.join(exeFolderPath, "engine.exe");
 
   // Read the api-key.txt file
   const apiKeyFilePath = path.join(path.dirname(app.getAppPath()), "api-key.txt");
@@ -284,6 +288,9 @@ ipcMain.on("initialize-engine", async (event) => {
   child.stderr.on('data', (data) => {
     event.reply("initialize-engine", { description: data, isProgress: true })
   });
+
+  // when finished overwrite local config with remote config
+  fs.writeFileSync(path.join(app.getAppPath(), "main", "engine-config.json"), JSON.stringify(remoteConfig, null, 2));
 
 });
 
@@ -325,7 +332,7 @@ ipcMain.on("run-remove-bg", async (event, args) => {
 
   // Get engine executable path
   let enginePath = await path.join(path.dirname(app.getAppPath()), "engine");
-  let exePath = await path.join(enginePath, "SwitchLight.exe");
+  let exePath = await path.join(enginePath, "engine.exe");
 
   let modelPath = await path.join(enginePath, "switchLight.enc");
 
@@ -369,7 +376,7 @@ ipcMain.on("run-derender", async (event, args) => {
 
   // Get engine executable path
   let enginePath = await path.join(path.dirname(app.getAppPath()), "engine");
-  let exePath = await path.join(enginePath, "SwitchLight.exe");
+  let exePath = await path.join(enginePath, "engine.exe");
 
   let modelPath = await path.join(enginePath, "switchLight.enc");
 

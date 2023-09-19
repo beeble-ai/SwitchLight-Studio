@@ -267,6 +267,7 @@ ipcMain.on("api-key-submitted", (event, apiKey) => {
   event.reply("api-key-submitted", "success");
 });
 
+// api key 인증 및 모델 다운로드 (+ 로드)
 ipcMain.on("initialize-engine", async (event) => {
   const fs = require("fs");
   const path = require("path");

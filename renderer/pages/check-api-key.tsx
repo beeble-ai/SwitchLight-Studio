@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Head from "next/head";
 import electron from "electron";
 
-import { useRouter } from 'next/router';
+import { useRouter } from "next/router";
 
 import { Button, Label, TextInput } from "flowbite-react";
 
@@ -14,7 +14,6 @@ function CheckAPIKey() {
   const router = useRouter(); // <-- Call the useRouter hook
 
   useEffect(() => {
-
     // check whether key file exists
     if (!ipcRenderer) return;
 
@@ -22,12 +21,12 @@ function CheckAPIKey() {
 
     ipcRenderer.on("api-key-read", (event, data) => {
       if (data["keyexists"]) {
-        setApiKey(data["key"])
+        setApiKey(data["key"]);
         ipcRenderer.removeAllListeners("api-key-read");
         router.push("/initialize-engine");
       }
     });
-  }, [])
+  }, []);
 
   function handleKeySubmit() {
     if (!ipcRenderer || !apiKey) return;
@@ -43,18 +42,11 @@ function CheckAPIKey() {
     ipcRenderer.on("api-key-submitted", handleApiKeySubmitted);
   }
 
-
   return (
     <React.Fragment>
       <Head>
         <title>SwitchLight Desktop Beta</title>
       </Head>
-      <div className="grid grid-col-1 text-2xl w-full text-center mt-10">
-        <span>⚡ SwitchLight Desktop Beta ⚡</span>
-        <span className="text-[10px]">Ver. XX</span>
-      </div>
-
-      {/* Mode */}
 
       {/* <div className="flex flex-col items-start gap-4"> */}
       <div className="flex items-center w-full gap-2">

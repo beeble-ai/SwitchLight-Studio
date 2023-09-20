@@ -97,6 +97,43 @@ async function isModelUpdateRequired(remoteModelVersion) {
 //                                                                //
 ////////////////////////////////////////////////////////////////////
 
+// show dialog
+ipcMain.on("show-dialog", (event, args) => {
+  const { dialog } = require("electron");
+
+  const dialogOpts = {
+    type: args.type,
+    buttons: args.buttons,
+    title: args.title,
+    message: args.message,
+    detail: args.detail,
+  }
+
+  dialog.showMessageBox(dialogOpts).then((returnValue) => {
+    event.reply("show-dialog", returnValue.response);
+  });
+});
+
+
+function showErrorDialog(error_code) {
+  const { dialog } = require('electron');
+
+  const errorMessages = {
+    401: 'Invalid API Key. Please check your API Key and try again.',
+    402: 'Not Registered Beta User',
+    500: 'Unexpected Error. Restart the app and if the problem persists, contact info@beeble.ai',
+    591: 'Loading AI Model Failed. Restart the app and try again.',
+    592: 'This GPU is not registered. Restart the app to register this GPU',
+    593: 'This GPU is different from the one used during registration. Restart the app to override the registration.',
+    594: 'Loading AI Model Failed. Remove engine/ folder and restart the app to download the model again.'
+  };
+
+  const errorMessage = errorMessages[error_code] || 'Unknown error occurred. Please contact info@beeble.ai';
+
+  dialog.showErrorBox('Error', errorMessage);
+
+}
+
 // 1. launch-app: Download latest engine if possible
 ipcMain.on("compare-and-download-engine", async (event, args) => {
   const fs = require("fs");
@@ -224,9 +261,8 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
 
         if (!response.ok) {
           log.info(`Failed to download file`);
-          throw new Error(
-            `Failed to download file ${url}. Status: ${response.statusText}`
-          );
+          showErrorDialog(500);
+          return
         }
 
         // Create a directory if it doesn't exist
@@ -234,7 +270,6 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
         log.info(parentDirectory, url, response);
         if (!fs.existsSync(parentDirectory)) {
           fs.mkdirSync(parentDirectory, { recursive: true });
-          log.info("parent directory is made");
         }
 
         // Download and save the file to the specified directory
@@ -329,7 +364,6 @@ ipcMain.on("initialize-engine", async (event) => {
   const child = require("child_process").exec(command, option);
 
   child.stdout.on("data", (data) => {
-
     event.reply("initialize-engine", {
       description: data,
       modelUpdateRequired: modelUpdateRequired,
@@ -338,8 +372,11 @@ ipcMain.on("initialize-engine", async (event) => {
   });
 
   child.stderr.on("data", (data) => {
-    event.reply("initialize-engine", { description: data, isProgress: true });
+    const match = data.match(/\d{1,3}/);  // This regex matches 1 to 3 digit numbers
+    const errorCode = match ? match[0] : null;
+    showErrorDialog(errorCode);
   });
+
 });
 
 // 5. initiailize-engine: Update engine config with latest config from s3
@@ -347,7 +384,6 @@ ipcMain.on("update-engine-config", async (event) => {
   const fs = require("fs");
   const path = require("path");
   const fetch = require("node-fetch");
-
 
   // Check if model update is required
   const response = await fetch(
@@ -367,9 +403,13 @@ ipcMain.on("select-path", async (event, type) => {
   const { dialog } = require("electron");
 
   let result = null;
+
   if (type === "file") {
     result = await dialog.showOpenDialog({
       properties: ["openFile"],
+      filters: [
+        { name: 'Videos', extensions: ['mov', 'mp4'] }
+      ]
     });
   } else if (type === "directory") {
     result = await dialog.showOpenDialog({
@@ -384,10 +424,13 @@ ipcMain.on("select-path", async (event, type) => {
   }
 
   const directoryPath = result.filePaths[0];
-  // const files = fs.readdirSync(directoryPath);
 
-  event.reply("select-path", { directoryPath: directoryPath });
-  // , numFiles: files.length });
+  const numFiles = type === "file" ? 1 : fs.readdirSync(directoryPath).length;
+
+  event.reply("select-path", {
+    directoryPath: directoryPath,
+    numFiles: numFiles
+  });
 });
 
 // 6-2. run-engine: remove background
@@ -476,10 +519,28 @@ ipcMain.on("run-derender", async (event, args) => {
   const child = require("child_process").exec(command, option);
 
   child.stdout.on("data", (data) => {
-    if (data.includes("55/55 frames")) {
-      event.reply("run-derender", { description: data, isComplete: true });
+
+    if (data.includes("frames")) {
+      let division = data.split("frames")[0];
+      let currentFrame = division.split("/")[0].split("|")[1].trim();
+      let totalFrame = division.split("/")[1].trim();
+
+      if (currentFrame === totalFrame) {
+        event.reply("run-derender", { description: data, isComplete: true });
+      } else {
+        event.reply("run-derender", { description: data, isComplete: false });
+      }
     } else {
       event.reply("run-derender", { description: data, isComplete: false });
+    }
+  });
+
+  // TODO: check if this is needed
+  child.on('exit', (code) => {
+    if (code === 0) {
+      console.log(`Child exited with code ${code}`);
+    } else {
+      return
     }
   });
 });
@@ -510,3 +571,4 @@ ipcMain.on("open-threejs-renderer", async (event, apiKey) => {
     threejsWindow.webContents.openDevTools();
   }
 });
+

@@ -1,22 +1,13 @@
-import React, { useRef, useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import { Checkbox, Label } from "flowbite-react";
 import Head from "next/head";
 import FolderPicker from "../components/folder-picker";
-
-import { MdInfoOutline } from "react-icons/md";
-import { AiOutlineClose } from "react-icons/ai";
-
-import * as log from "electron-log";
-
 import { ipcRenderer} from "electron";
 
-import { Button, Checkbox, Label } from "flowbite-react";
 
 function RunEngine() {
 
-  // open modal for notifying user, e.g. derendering is finished
-  const [openModal, setOpenModal] = useState(false);
-
-  // open dropdown for selecting mode
+  const dropdownRef = useRef(null);
   const [openDropdown, setOpenDropdown] = useState(false);
   const toggleDropdown = () => setOpenDropdown((prevState) => !prevState);
 
@@ -46,6 +37,25 @@ function RunEngine() {
 
   // engine is running or not, used to disable run button and folder picker
   const [isEngineRunning, setIsEngineRunning] = useState(false);
+  const [isLaunchPrepared, setIsLaunchPrepared] = useState(false);
+
+  const [bgremovalDir, setBgremovalDir] = useState("")
+  const [derenderDir, setDerenderDir] = useState("")
+
+  useEffect(() => {
+    function handleDocumentClick(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        // Close the dropdown if openDropdown is true
+        if (openDropdown) toggleDropdown();
+      }
+    }
+
+    document.addEventListener("mousedown", handleDocumentClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentClick);
+    };
+  }, [openDropdown]);
 
   // open folder picker dialog and get input path from user
   // path can be a file or a folder depending on mode
@@ -53,8 +63,19 @@ function RunEngine() {
 
     // definer handler: handle response from main process
     const handleSelectDirectory = (event, data) => {
-      setInputFolderPath(data["directoryPath"]);
-      ipcRenderer.removeAllListeners("select-path");
+      if (mode !== "Video" && data["numFiles"] === 0) {
+        ipcRenderer.send("show-dialog", {
+          type: "error",
+          title: "Error!",
+          message: "Your selected directory does not contain any image files!",
+        });
+        ipcRenderer.on("show-dialog", (event) => {
+          ipcRenderer.removeAllListeners("show-dialog");
+        });
+      } else {
+        setInputFolderPath(data["directoryPath"]);
+        ipcRenderer.removeAllListeners("select-path");
+      }
     };
 
     // send message to main process to open dialog
@@ -91,10 +112,11 @@ function RunEngine() {
     }
   }
 
-  // Reset label and status when mode is changed
+  // Reset label and status when mode and bgRemovalChecked are changed
   useMemo(() => {
     // reset label
     if (mode === "Video") {
+      setbgRemovalChecked(true)
       setInputLabel("Input Video Path: ");
       setOutputLabel("Output Dir: ");
     } else {
@@ -102,13 +124,35 @@ function RunEngine() {
       setOutputLabel("Output Dir: ");
     }
     // reset status
-    setBgRemovalStatus("Not Started");
+    if (bgRemovalChecked) {
+      setBgRemovalStatus("Not Started");
+    } else {
+      setBgRemovalStatus("-")
+    }
     setDerenderStatus("Not Started");
     setTerminalOutput("");
     setInputFolderPath("");
     setOutputFolderPath("");
+    setIsLaunchPrepared(false);
 
-  }, [mode]);
+  }, [mode, bgRemovalChecked]);
+
+  useMemo(() => {
+    if (outputFolderPath) {
+      setDerenderDir(outputFolderPath + "\\{normal,albedo,roughness,specular}");
+    } else {
+      setDerenderDir("");
+    }
+
+    if (!bgRemovalChecked) {
+      setBgremovalDir("Not Available");
+    } else if (outputFolderPath && bgRemovalChecked) {
+      setBgremovalDir(outputFolderPath + "\\bgremoval");
+    } else {
+      setBgremovalDir("");
+    }
+
+  }, [outputFolderPath, bgRemovalChecked])
 
   // Run background removal when clicked
   function runBgRemoval() {
@@ -161,9 +205,19 @@ function RunEngine() {
 
       // remove listener when finished and notify user with modal
       if (data["isComplete"]) {
-        ipcRenderer.removeAllListeners("run-derender");
         setIsEngineRunning(false);
-        setOpenModal(true)
+
+        ipcRenderer.send("show-dialog", {
+          title: "Finished!",
+          message: "De-Rendering is finished! \nView the results in the output directories.",
+        });
+
+        ipcRenderer.on("show-dialog", (event) => {
+          ipcRenderer.removeAllListeners("show-dialog");
+        });
+        setIsLaunchPrepared(true);
+        ipcRenderer.removeAllListeners("run-derender");
+
       }
     };
 
@@ -194,9 +248,10 @@ function RunEngine() {
 
       <div className="flex items-center gap-4 mt-10 mx-2">
         {/* Dropdown Button */}
-        <div className="relative">
+        <div id="dropdown" className="relative" ref={dropdownRef}>
           <button
-            className="w-[150px] text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+            className={`w-[150px] text-white ${isEngineRunning ?
+              "bg-gray-500 hover:bg-gray-500" : "bg-blue-700 hover:bg-blue-800"} font-medium rounded-lg text-sm px-5 py-2.5 inline-flex items-center`}
             type="button"
             disabled={isEngineRunning}
             style={
@@ -255,11 +310,12 @@ function RunEngine() {
           <div className="flex items-center gap-2">
             <Checkbox
               id="Remove Background"
+              className={`${isEngineRunning ? "cursor-not-allowed text-gray-400" : ""}`}
               disabled={isEngineRunning}
               checked={bgRemovalChecked}
               onChange={handleBgRemovalCheckboxChange}
             />
-            <Label className="text-white" htmlFor="Remove Background">
+            <Label className={`${isEngineRunning ? "text-gray-400" : "text-white"}`} htmlFor="Remove Background">
               Remove Background
             </Label>
           </div>
@@ -284,23 +340,13 @@ function RunEngine() {
         <br />
         <FolderPicker
           label={"Background Removed\nOutput Dir:"}
-          path={
-            !bgRemovalChecked
-              ? ""
-              : outputFolderPath
-                ? outputFolderPath + "\\bgremoval"
-                : ""
-          }
+          path={bgremovalDir}
           buttonLabel={bgRemovalStatus}
           onClick={null}
         />
         <FolderPicker
           label={"Derendered \nOutput Dir: "}
-          path={
-            outputFolderPath
-              ? outputFolderPath + "\\{ normal,albedo,roughness,specular}"
-              : ""
-          }
+          path={derenderDir}
           buttonLabel={derenderStatus}
           onClick={null}
         />
@@ -309,7 +355,7 @@ function RunEngine() {
       {/* Run Engine button */}
       <div className="flex justify-end px-4 mt-3 gap-2">
         <button
-          className={`${isEngineRunning || !isEngineRunning && derenderStatus === "100%" ? "bg-gray-400" : "bg-yellow-400"
+          className={`${isEngineRunning || !isEngineRunning && derenderStatus === "100%" ? "bg-gray-500" : "bg-yellow-400"
             } p-2 rounded-lg text-black w-[95px]`}
           disabled={isEngineRunning || !isEngineRunning && derenderStatus === "100%"}
           onClick={() => {
@@ -321,18 +367,16 @@ function RunEngine() {
             }
           }}
         >
-          {" "}
           <p className="font-bold text-[12px]">Run</p>
         </button>
         <button
-          className={`${isEngineRunning ? "bg-gray-400" : "bg-yellow-400"
+          className={`${!isLaunchPrepared ? "bg-gray-500" : "bg-yellow-400"
             } p-2 rounded-lg text-black w-[95px]`}
-          disabled={isEngineRunning}
+          disabled={!isLaunchPrepared}
           onClick={() => {
             ipcRenderer.send("open-threejs-renderer");
           }}
         >
-          {" "}
           <p className="font-bold text-[12px]">Launch SwitchLight </p>
         </button>
       </div>
@@ -345,30 +389,6 @@ function RunEngine() {
         {terminalOutput}
       </div>
 
-      <div id="popup-modal" className={`flex justify-center items-center z-100000 p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full absolute top-0 left-0 w-full ${openModal ? "" : "hidden"}`}>
-        <div className="relative w-full max-w-md max-h-full">
-          <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
-            <button
-              type="button"
-              onClick={() => setOpenModal(!openModal)}
-              className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center" data-modal-hide="popup-modal">
-              <AiOutlineClose className="w-5 h-5" />
-            </button>
-            <div className="p-6 text-center">
-              <MdInfoOutline className="w-16 h-16 mx-auto text-blue-600 mb-5" />
-              <h3 className="mb-10 text-lg font-normal text-gray-900">
-                De-Rendering is finished! <br></br>
-                View the results in the output directories.</h3>
-              <button
-                onClick={() => setOpenModal(!openModal)}
-                type="button"
-                className="text-white bg-blue-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center mr-2">
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </React.Fragment>
   );
 }

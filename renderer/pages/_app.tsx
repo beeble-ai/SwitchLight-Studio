@@ -7,7 +7,6 @@ import { SLNavbar } from "../components/navbar";
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
-      {/* <Providers> */}
       <SLNavbar />
       <Component {...pageProps} />
     </>

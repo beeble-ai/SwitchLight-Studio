@@ -11,7 +11,6 @@ interface FolderPickerProps {
 
 const FolderPicker = ((props: FolderPickerProps) => {
     const { label, path, disabled, onClick, buttonLabel } = props;
-    console.log("FolderPicker: ", label, path, disabled, onClick, buttonLabel);
     return (
         <div className="flex justify-between w-full gap-2 p-2 text-[12px]">
             {/* label (parse whenever \n appears) */}
@@ -41,7 +40,7 @@ const FolderPicker = ((props: FolderPickerProps) => {
                 <>
                     <label
                         htmlFor={`${label}Picker`}
-                        className={`w-[100px] text-center rounded-lg py-2 px-4 bg-gray-400
+                        className={`w-[100px] text-center rounded-lg py-2 px-4 bg-gray-400 font-medium
                             ${disabled ? "text-gray-600 cursor-not-allowed" : "text-black cursor-pointer"}`}
                     >
                         {buttonLabel}

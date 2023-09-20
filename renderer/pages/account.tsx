@@ -2,11 +2,15 @@ import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import electron from "electron";
 
+import { useRouter } from "next/router";
+
 const ipcRenderer = electron.ipcRenderer || false;
 
 function Account() {
   const [apiKey, setApiKey] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+
+  const router = useRouter(); // <-- Call the useRouter hook
 
   useEffect(() => {
     // check whether key file exists
@@ -21,6 +25,20 @@ function Account() {
       }
     });
   }, []);
+
+  function handleKeySubmit() {
+    if (!ipcRenderer || !apiKey) return;
+
+    const handleApiKeySubmitted = (event, data) => {
+      if (data === "success") {
+        router.push("/initialize-engine");
+      }
+      ipcRenderer.removeAllListeners("api-key-submitted");
+    };
+
+    ipcRenderer.send("api-key-submitted", apiKey);
+    ipcRenderer.on("api-key-submitted", handleApiKeySubmitted);
+  }
 
   return (
     <React.Fragment>
@@ -52,7 +70,12 @@ function Account() {
           <button
             type="submit"
             className="btn-blue"
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={() => {
+              if (isEditing) {
+                handleKeySubmit()
+              }
+              setIsEditing(!isEditing)
+            }}
           >
             <p>{isEditing ? "Save" : "Edit"}</p>
           </button>

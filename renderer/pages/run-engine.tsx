@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { Checkbox, Label } from "flowbite-react";
 import Head from "next/head";
 import FolderPicker from "../components/folder-picker";
 
 import electron from "electron";
 
-import { Checkbox, Label } from "flowbite-react";
 
 function RunEngine() {
   const ipcRenderer = electron.ipcRenderer || false;
@@ -33,12 +33,41 @@ function RunEngine() {
 
   const [isEngineRunning, setIsEngineRunning] = useState(false);
 
+  const [bgremovalDir, setBgremovalDir] = useState("")
+  const [derenderDir, setDerenderDir] = useState("")
+
+  useEffect(() => {
+    function handleDocumentClick(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        // Close the dropdown if openDropdown is true
+        if (openDropdown) toggleDropdown();
+      }
+    }
+
+    document.addEventListener("mousedown", handleDocumentClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentClick);
+    };
+  }, [openDropdown]);
+
   function handleInputFolderChange() {
     if (!ipcRenderer) return;
 
     const handleSelectDirectory = (event, data) => {
-      setInputFolderPath(data["directoryPath"]);
-      ipcRenderer.removeAllListeners("select-path");
+      if (mode !== "Video" && data["numFiles"] === 0) {
+        ipcRenderer.send("show-dialog", {
+          type: "error",
+          title: "Error!",
+          message: "Your selected directory does not contain any image files!",
+        });
+        ipcRenderer.on("show-dialog", (event) => {
+          ipcRenderer.removeAllListeners("show-dialog");
+        });
+      } else {
+        setInputFolderPath(data["directoryPath"]);
+        ipcRenderer.removeAllListeners("select-path");
+      }
     };
 
     ipcRenderer.send("select-path", mode === "Video" ? "file" : "directory");
@@ -97,17 +126,19 @@ function RunEngine() {
   useMemo(() => {
     if (outputFolderPath) {
       setDerenderDir(outputFolderPath + "\\{normal,albedo,roughness,specular}");
-      if (bgRemovalChecked) {
-        setBgremovalDir(outputFolderPath + "\\bgremoval");
-      } else {
-        setBgremovalDir("Not Available");
-      }
     } else {
       setDerenderDir("");
+    }
+
+    if (!bgRemovalChecked) {
+      setBgremovalDir("Not Available");
+    } else if (outputFolderPath && bgRemovalChecked) {
+      setBgremovalDir(outputFolderPath + "\\bgremoval");
+    } else {
       setBgremovalDir("");
     }
 
-  }, [outputFolderPath])
+  }, [outputFolderPath, bgRemovalChecked])
 
   function runBgRemoval() {
     if (!ipcRenderer) return;

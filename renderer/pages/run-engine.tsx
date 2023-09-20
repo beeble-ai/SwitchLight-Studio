@@ -329,8 +329,6 @@ function RunEngine() {
             } p-2 rounded-lg text-black w-[95px]`}
           disabled={isEngineRunning}
           onClick={() => {
-            
-
             ipcRenderer.send("open-threejs-renderer");
           }}
         >

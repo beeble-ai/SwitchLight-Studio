@@ -485,9 +485,28 @@ ipcMain.on("run-derender", async (event, args) => {
 });
 
 // 6-4. run-engine: open three.js renderer
-ipcMain.on("open-threejs-renderer", (event, apiKey) => {
-  createWindow("threejsRenderer", {
-    width: 800,
-    height: 600,
+ipcMain.on("open-threejs-renderer", async (event, apiKey) => {
+
+  // Get current window's bounds to open threejsWindow next to it
+  const currentBounds = BrowserWindow.getFocusedWindow()?.getBounds();
+  const { x = 0, y = 0 } = currentBounds || {};
+
+  // Create a new window: threejsWindow
+  const threejsWindow = createWindow("threejsRenderer", {
+      x: x - 50,
+      y: y - 50,
+      width: 1000,
+      height: 1000,
   });
+
+  // Remove the menu bar for Windows
+  threejsWindow.setMenu(null);
+
+  if (isProd) {
+    await threejsWindow.loadURL("app://./threejs-renderer.html");
+  } else {
+    const port = process.argv[2];
+    await threejsWindow.loadURL(`http://localhost:${port}/threejs-renderer`);
+    threejsWindow.webContents.openDevTools();
+  }
 });

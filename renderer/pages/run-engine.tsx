@@ -7,62 +7,76 @@ import { AiOutlineClose } from "react-icons/ai";
 
 import * as log from "electron-log";
 
-import electron from "electron";
+import { ipcRenderer} from "electron";
 
 import { Button, Checkbox, Label } from "flowbite-react";
 
 function RunEngine() {
-  const ipcRenderer = electron.ipcRenderer || false;
 
+  // open modal for notifying user, e.g. derendering is finished
   const [openModal, setOpenModal] = useState(false);
 
+  // open dropdown for selecting mode
   const [openDropdown, setOpenDropdown] = useState(false);
   const toggleDropdown = () => setOpenDropdown((prevState) => !prevState);
 
+  // mode selection: "Video" and "Image Sequence" allowed
   const [mode, setMode] = useState("Video"); // Video or Image Sequence
 
+  // run background removal or not when mode is Image Sequence
   const [bgRemovalChecked, setbgRemovalChecked] = useState(true);
   const handleBgRemovalCheckboxChange = (event) => {
     setbgRemovalChecked(event.target.checked);
   };
 
+  // input and output label, different between mode
   const [inputLabel, setInputLabel] = useState("");
   const [outputLabel, setOutputLabel] = useState("");
 
+  // input and output folder path, received from user
   const [inputFolderPath, setInputFolderPath] = useState("");
   const [outputFolderPath, setOutputFolderPath] = useState("");
 
+  // terminal output from engine
   const [terminalOutput, setTerminalOutput] = useState("");
 
+  // status of background removal and derendering: "Not Started", "Loading...", "##%"
   const [bgRemovalStatus, setBgRemovalStatus] = useState("Not Started");
   const [derenderStatus, setDerenderStatus] = useState("Not Started");
 
+  // engine is running or not, used to disable run button and folder picker
   const [isEngineRunning, setIsEngineRunning] = useState(false);
 
+  // open folder picker dialog and get input path from user
+  // path can be a file or a folder depending on mode
   function handleInputFolderChange() {
-    if (!ipcRenderer) return;
 
+    // definer handler: handle response from main process
     const handleSelectDirectory = (event, data) => {
       setInputFolderPath(data["directoryPath"]);
       ipcRenderer.removeAllListeners("select-path");
     };
 
+    // send message to main process to open dialog
     ipcRenderer.send("select-path", mode === "Video" ? "file" : "directory");
     ipcRenderer.on("select-path", handleSelectDirectory);
   }
 
+  // open folder picker dialog and get output folder path from user
   function handleOutputFolderChange() {
-    if (!ipcRenderer) return;
 
+    // definer handler: handle response from main process
     const handleSelectDirectory = (event, data) => {
       setOutputFolderPath(data["directoryPath"]);
       ipcRenderer.removeAllListeners("select-path");
     };
 
+    // send message to main process to open dialog
     ipcRenderer.send("select-path", "directory");
     ipcRenderer.on("select-path", handleSelectDirectory);
   }
 
+  // get progress from terminal output: parsing frames "1/100" as "1%"
   function getProgress(str: string): string | null {
     if (!str.includes("frames")) return null;
 
@@ -77,7 +91,9 @@ function RunEngine() {
     }
   }
 
+  // Reset label and status when mode is changed
   useMemo(() => {
+    // reset label
     if (mode === "Video") {
       setInputLabel("Input Video Path: ");
       setOutputLabel("Output Dir: ");
@@ -94,10 +110,12 @@ function RunEngine() {
 
   }, [mode]);
 
+  // Run background removal when clicked
   function runBgRemoval() {
-    if (!ipcRenderer) return;
 
+    // define handler: handle response from main process: update status and terminal output
     const handleRemoveBackground = (event, data) => {
+      // initialize progress
       const progress = getProgress(data["description"]);
       if (progress) {
         setBgRemovalStatus(progress + "%");
@@ -105,27 +123,32 @@ function RunEngine() {
         setBgRemovalStatus("Loading...");
       }
 
-      // setTerminalOutput(prev => (prev ? prev + "\n" : "") + data["description"]);
+      // set terminal output
       setTerminalOutput((prev) => (prev ? prev : "") + data["description"]);
 
+      // remove listener when finished and run derender
       if (data["isComplete"]) {
         ipcRenderer.removeAllListeners("run-remove-bg");
         runDerender();
       }
     };
 
+    // send message to main process to run background removal
     ipcRenderer.send("run-remove-bg", {
       mode: mode,
       inputDir: inputFolderPath,
       outputDir: outputFolderPath,
     });
+
+    // handle response from main process
     ipcRenderer.on("run-remove-bg", handleRemoveBackground);
   }
 
   function runDerender() {
-    if (!ipcRenderer) return;
 
+    // define handler: handle response from main process: update status and terminal output
     const handleDerender = (event, data) => {
+      // initialize progress
       const progress = getProgress(data["description"]);
       if (progress) {
         setDerenderStatus(progress + "%");
@@ -133,8 +156,10 @@ function RunEngine() {
         setDerenderStatus("Loading...");
       }
 
+      // set terminal output
       setTerminalOutput((prev) => (prev ? prev : "") + data["description"]);
 
+      // remove listener when finished and notify user with modal
       if (data["isComplete"]) {
         ipcRenderer.removeAllListeners("run-derender");
         setIsEngineRunning(false);
@@ -142,6 +167,7 @@ function RunEngine() {
       }
     };
 
+    // send message to main process to run derender depending on bgRemovalChecked
     if (bgRemovalChecked) {
       ipcRenderer.send("run-derender", {
         mode: mode,
@@ -302,7 +328,11 @@ function RunEngine() {
           className={`${isEngineRunning ? "bg-gray-400" : "bg-yellow-400"
             } p-2 rounded-lg text-black w-[95px]`}
           disabled={isEngineRunning}
-          onClick={() => { }}
+          onClick={() => {
+            
+
+            ipcRenderer.send("open-threejs-renderer");
+          }}
         >
           {" "}
           <p className="font-bold text-[12px]">Launch SwitchLight </p>

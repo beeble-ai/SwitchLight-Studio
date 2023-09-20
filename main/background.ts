@@ -5,16 +5,19 @@ import serve from "electron-serve";
 import { createWindow } from "./helpers";
 import { initializeAutoUpdater, autoUpdater } from "./helpers/update-handler"; // Import updateInterval too
 
+// Get running environment: prod or dev
 const isProd: boolean = process.env.NODE_ENV === "production";
 
+// Set app directory path
 if (isProd) {
   serve({ directory: "app" });
 } else {
   app.setPath("userData", `${app.getPath("userData")} (development)`);
 }
 
+// Initialize autoUpdater when running in production
 if (isProd) {
-  initializeAutoUpdater(); // Set up the auto-updater event listeners
+  initializeAutoUpdater();
 }
 
 (async () => {
@@ -29,10 +32,10 @@ if (isProd) {
   mainWindow.setMenu(null);
 
   if (isProd) {
-    await mainWindow.loadURL("app://./launch-app.html");
+    await mainWindow.loadURL("app://./run-engine.html");
   } else {
     const port = process.argv[2];
-    await mainWindow.loadURL(`http://localhost:${port}/launch-app`);
+    await mainWindow.loadURL(`http://localhost:${port}/run-engine`);
     mainWindow.webContents.openDevTools();
   }
 
@@ -87,6 +90,14 @@ async function isModelUpdateRequired(remoteModelVersion) {
   return modelUpdateRequired;
 }
 
+
+////////////////////////////////////////////////////////////////////
+//                                                                //
+//               Below functions are related to IPC               //
+//                                                                //
+////////////////////////////////////////////////////////////////////
+
+// 1. launch-app: Download latest engine if possible
 ipcMain.on("compare-and-download-engine", async (event, args) => {
   const fs = require("fs");
   const path = require("path");
@@ -246,6 +257,7 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
   event.reply("compare-and-download-engine", "complete");
 });
 
+// 2. check-api-key: Read api-key.txt file
 ipcMain.on("api-key-read", (event, apiKey) => {
   const fs = require("fs");
   const path = require("path");
@@ -267,6 +279,7 @@ ipcMain.on("api-key-read", (event, apiKey) => {
   }
 });
 
+// 3. check-api-key: Submit api-key.txt file
 ipcMain.on("api-key-submitted", (event, apiKey) => {
   const fs = require("fs");
   const path = require("path");
@@ -279,7 +292,7 @@ ipcMain.on("api-key-submitted", (event, apiKey) => {
   event.reply("api-key-submitted", "success");
 });
 
-// api key 인증 및 모델 다운로드 (+ 로드)
+// 4. initiailize-engine: Authenticate api-key with server and download AI model
 ipcMain.on("initialize-engine", async (event) => {
   const fs = require("fs");
   const path = require("path");
@@ -329,6 +342,7 @@ ipcMain.on("initialize-engine", async (event) => {
   });
 });
 
+// 5. initiailize-engine: Update engine config with latest config from s3
 ipcMain.on("update-engine-config", async (event) => {
   const fs = require("fs");
   const path = require("path");
@@ -347,6 +361,7 @@ ipcMain.on("update-engine-config", async (event) => {
   event.reply("update-engine-config", { isComplete: true });
 });
 
+// 6-1. run-engine: select input and output paths
 ipcMain.on("select-path", async (event, type) => {
   const fs = require("fs");
   const { dialog } = require("electron");
@@ -375,6 +390,7 @@ ipcMain.on("select-path", async (event, type) => {
   // , numFiles: files.length });
 });
 
+// 6-2. run-engine: remove background
 ipcMain.on("run-remove-bg", async (event, args) => {
   const fs = require("fs");
   const path = require("path");
@@ -421,6 +437,7 @@ ipcMain.on("run-remove-bg", async (event, args) => {
   });
 });
 
+// 6-3. run-engine: derender
 ipcMain.on("run-derender", async (event, args) => {
   const fs = require("fs");
   const path = require("path");
@@ -464,5 +481,13 @@ ipcMain.on("run-derender", async (event, args) => {
     } else {
       event.reply("run-derender", { description: data, isComplete: false });
     }
+  });
+});
+
+// 6-4. run-engine: open three.js renderer
+ipcMain.on("open-threejs-renderer", (event, apiKey) => {
+  createWindow("threejsRenderer", {
+    width: 800,
+    height: 600,
   });
 });

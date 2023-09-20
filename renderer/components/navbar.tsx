@@ -1,32 +1,11 @@
 import { Navbar } from "flowbite-react";
 import { FiSettings } from "react-icons/fi";
 import { ReactElement } from "react";
+import { useRouter } from "next/router";
 
-interface UserProfileIconProps {
-  profileImageUrl: string;
-  size?: number;
-}
-
-export const UserProfileIcon = ({
-  profileImageUrl,
-  size,
-}: UserProfileIconProps) => {
-  return (
-    <>
-      <div className="bg-gray-500 rounded-full">
-        <img
-          src={profileImageUrl}
-          alt="user-profile"
-          width={size ?? 30}
-          height={size ?? 30}
-          style={{ borderRadius: "100%" }}
-        />
-      </div>
-    </>
-  );
-};
 
 export const SLNavbar = (): ReactElement => {
+  const router = useRouter();
   return (
     <>
       <Navbar
@@ -34,13 +13,18 @@ export const SLNavbar = (): ReactElement => {
         className="bg-black"
         style={{ width: "100%", top: 0, zIndex: 9999 }}
       >
-        <Navbar.Brand href="/">
+        <Navbar.Brand href="/run-engine">
           <img
             alt="SwitchLight Logo"
             className="h-6 m-2 ml-3"
             src="/assets/images/switchlight-logo-product-xl.png"
           />
         </Navbar.Brand>
+        {/* {router.pathname === '/run-engine' && (
+          <a href="/account" className="justify-end mx-3 p-2">
+            <FiSettings size={20} />
+          </a>
+        )} */}
         <a href="/account" className="justify-end mx-3 p-2">
           <FiSettings size={20} />
         </a>

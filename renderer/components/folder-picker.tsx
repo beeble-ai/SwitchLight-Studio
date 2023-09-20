@@ -41,7 +41,7 @@ const FolderPicker = ((props: FolderPickerProps) => {
                 <>
                     <label
                         htmlFor={`${label}Picker`}
-                        className={`w-[100px] text-center rounded-lg py-2 px-4 bg-gray-400
+                        className={`w-[100px] text-center rounded-lg py-2 px-4 bg-gray-400 font-medium
                             ${disabled ? "text-gray-600 cursor-not-allowed" : "text-black cursor-pointer"}`}
                     >
                         {buttonLabel}

@@ -213,9 +213,8 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
 
         if (!response.ok) {
           log.info(`Failed to download file`);
-          throw new Error(
-            `Failed to download file ${url}. Status: ${response.statusText}`
-          );
+          showErrorDialog(500);
+          return
         }
 
         // Create a directory if it doesn't exist
@@ -223,7 +222,6 @@ ipcMain.on("compare-and-download-engine", async (event, args) => {
         log.info(parentDirectory, url, response);
         if (!fs.existsSync(parentDirectory)) {
           fs.mkdirSync(parentDirectory, { recursive: true });
-          log.info("parent directory is made");
         }
 
         // Download and save the file to the specified directory
@@ -316,7 +314,6 @@ ipcMain.on("initialize-engine", async (event) => {
   const child = require("child_process").exec(command, option);
 
   child.stdout.on("data", (data) => {
-
     event.reply("initialize-engine", {
       description: data,
       modelUpdateRequired: modelUpdateRequired,
@@ -325,8 +322,11 @@ ipcMain.on("initialize-engine", async (event) => {
   });
 
   child.stderr.on("data", (data) => {
-    event.reply("initialize-engine", { description: data, isProgress: true });
+    const match = data.match(/\d{1,3}/);  // This regex matches 1 to 3 digit numbers
+    const errorCode = match ? match[0] : null;
+    showErrorDialog(errorCode);
   });
+
 });
 
 ipcMain.on("update-engine-config", async (event) => {
@@ -465,4 +465,49 @@ ipcMain.on("run-derender", async (event, args) => {
       event.reply("run-derender", { description: data, isComplete: false });
     }
   });
+
+  // TODO: check if this is needed
+  child.on('exit', (code) => {
+    if (code === 0) {
+      console.log(`Child exited with code ${code}`);
+    } else {
+      return
+    }
+  });
 });
+
+ipcMain.on("show-dialog", (event, args) => {
+  const { dialog } = require("electron");
+
+  const dialogOpts = {
+    type: args.type,
+    buttons: args.buttons,
+    title: args.title,
+    message: args.message,
+    detail: args.detail,
+  }
+
+  dialog.showMessageBox(dialogOpts).then((returnValue) => {
+    event.reply("show-dialog", returnValue.response);
+  });
+});
+
+
+function showErrorDialog(error_code) {
+  const { dialog } = require('electron');
+
+  const errorMessages = {
+    401: 'Invalid API Key. Please check your API Key and try again.',
+    402: 'Not Registered Beta User',
+    500: 'Unexpected Error. Restart the app and if the problem persists, contact info@beeble.ai',
+    591: 'Loading AI Model Failed. Restart the app and try again.',
+    592: 'This GPU is not registered. Restart the app to register this GPU',
+    593: 'This GPU is different from the one used during registration. Restart the app to override the registration.',
+    594: 'Loading AI Model Failed. Remove engine/ folder and restart the app to download the model again.'
+  };
+
+  const errorMessage = errorMessages[error_code] || 'Unknown error occurred. Please contact info@beeble.ai';
+
+  dialog.showErrorBox('Error', errorMessage);
+
+}

@@ -1,20 +1,13 @@
-import React, { useRef, useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import Head from "next/head";
 import FolderPicker from "../components/folder-picker";
 
-import { MdInfoOutline } from "react-icons/md";
-import { AiOutlineClose } from "react-icons/ai";
-
-import * as log from "electron-log";
-
 import electron from "electron";
 
-import { Button, Checkbox, Label } from "flowbite-react";
+import { Checkbox, Label } from "flowbite-react";
 
 function RunEngine() {
   const ipcRenderer = electron.ipcRenderer || false;
-
-  const [openModal, setOpenModal] = useState(false);
 
   const [openDropdown, setOpenDropdown] = useState(false);
   const toggleDropdown = () => setOpenDropdown((prevState) => !prevState);
@@ -105,7 +98,6 @@ function RunEngine() {
         setBgRemovalStatus("Loading...");
       }
 
-      // setTerminalOutput(prev => (prev ? prev + "\n" : "") + data["description"]);
       setTerminalOutput((prev) => (prev ? prev : "") + data["description"]);
 
       if (data["isComplete"]) {
@@ -123,6 +115,7 @@ function RunEngine() {
   }
 
   function runDerender() {
+
     if (!ipcRenderer) return;
 
     const handleDerender = (event, data) => {
@@ -138,7 +131,15 @@ function RunEngine() {
       if (data["isComplete"]) {
         ipcRenderer.removeAllListeners("run-derender");
         setIsEngineRunning(false);
-        setOpenModal(true)
+
+        ipcRenderer.send("show-dialog", {
+          title: "Finished!",
+          message: "De-Rendering is finished! \nView the results in the output directories.",
+        });
+
+        ipcRenderer.on("show-dialog", (event) => {
+          ipcRenderer.removeAllListeners("show-dialog");
+        });
       }
     };
 
@@ -170,7 +171,8 @@ function RunEngine() {
         {/* Dropdown Button */}
         <div className="relative">
           <button
-            className="w-[150px] text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+            className={`w-[150px] text-white ${isEngineRunning ?
+              "bg-gray-500 hover:bg-gray-500" : "bg-blue-700 hover:bg-blue-800"} font-medium rounded-lg text-sm px-5 py-2.5 inline-flex items-center`}
             type="button"
             disabled={isEngineRunning}
             style={
@@ -229,11 +231,12 @@ function RunEngine() {
           <div className="flex items-center gap-2">
             <Checkbox
               id="Remove Background"
+              className={`${isEngineRunning ? "cursor-not-allowed text-gray-400" : ""}`}
               disabled={isEngineRunning}
               checked={bgRemovalChecked}
               onChange={handleBgRemovalCheckboxChange}
             />
-            <Label className="text-white" htmlFor="Remove Background">
+            <Label className={`${isEngineRunning ? "text-gray-400" : "text-white"}`} htmlFor="Remove Background">
               Remove Background
             </Label>
           </div>
@@ -283,7 +286,7 @@ function RunEngine() {
       {/* Run Engine button */}
       <div className="flex justify-end px-4 mt-3 gap-2">
         <button
-          className={`${isEngineRunning || !isEngineRunning && derenderStatus === "100%" ? "bg-gray-400" : "bg-yellow-400"
+          className={`${isEngineRunning || !isEngineRunning && derenderStatus === "100%" ? "bg-gray-500" : "bg-yellow-400"
             } p-2 rounded-lg text-black w-[95px]`}
           disabled={isEngineRunning || !isEngineRunning && derenderStatus === "100%"}
           onClick={() => {
@@ -299,7 +302,7 @@ function RunEngine() {
           <p className="font-bold text-[12px]">Run</p>
         </button>
         <button
-          className={`${isEngineRunning ? "bg-gray-400" : "bg-yellow-400"
+          className={`${isEngineRunning ? "bg-gray-500" : "bg-yellow-400"
             } p-2 rounded-lg text-black w-[95px]`}
           disabled={isEngineRunning}
           onClick={() => { }}
@@ -317,30 +320,6 @@ function RunEngine() {
         {terminalOutput}
       </div>
 
-      <div id="popup-modal" className={`flex justify-center items-center z-100000 p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full absolute top-0 left-0 w-full ${openModal ? "" : "hidden"}`}>
-        <div className="relative w-full max-w-md max-h-full">
-          <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
-            <button
-              type="button"
-              onClick={() => setOpenModal(!openModal)}
-              className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center" data-modal-hide="popup-modal">
-              <AiOutlineClose className="w-5 h-5" />
-            </button>
-            <div className="p-6 text-center">
-              <MdInfoOutline className="w-16 h-16 mx-auto text-blue-600 mb-5" />
-              <h3 className="mb-10 text-lg font-normal text-gray-900">
-                De-Rendering is finished! <br></br>
-                View the results in the output directories.</h3>
-              <button
-                onClick={() => setOpenModal(!openModal)}
-                type="button"
-                className="text-white bg-blue-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center mr-2">
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </React.Fragment>
   );
 }

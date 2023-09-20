@@ -348,13 +348,16 @@ ipcMain.on("update-engine-config", async (event) => {
 });
 
 ipcMain.on("select-path", async (event, type) => {
-  const fs = require("fs");
   const { dialog } = require("electron");
 
   let result = null;
+
   if (type === "file") {
     result = await dialog.showOpenDialog({
       properties: ["openFile"],
+      filters: [
+        { name: 'Videos', extensions: ['mov', 'mp4'] }
+      ]
     });
   } else if (type === "directory") {
     result = await dialog.showOpenDialog({

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import Head from "next/head";
 import FolderPicker from "../components/folder-picker";
 
@@ -9,6 +9,7 @@ import { Checkbox, Label } from "flowbite-react";
 function RunEngine() {
   const ipcRenderer = electron.ipcRenderer || false;
 
+  const dropdownRef = useRef(null);
   const [openDropdown, setOpenDropdown] = useState(false);
   const toggleDropdown = () => setOpenDropdown((prevState) => !prevState);
 
@@ -70,8 +71,10 @@ function RunEngine() {
     }
   }
 
+  // mode or bgRemovalChecked changes
   useMemo(() => {
     if (mode === "Video") {
+      setbgRemovalChecked(true)
       setInputLabel("Input Video Path: ");
       setOutputLabel("Output Dir: ");
     } else {
@@ -79,13 +82,32 @@ function RunEngine() {
       setOutputLabel("Output Dir: ");
     }
     // reset status
-    setBgRemovalStatus("Not Started");
+    if (bgRemovalChecked) {
+      setBgRemovalStatus("Not Started");
+    } else {
+      setBgRemovalStatus("-")
+    }
     setDerenderStatus("Not Started");
     setTerminalOutput("");
     setInputFolderPath("");
     setOutputFolderPath("");
 
-  }, [mode]);
+  }, [mode, bgRemovalChecked]);
+
+  useMemo(() => {
+    if (outputFolderPath) {
+      setDerenderDir(outputFolderPath + "\\{normal,albedo,roughness,specular}");
+      if (bgRemovalChecked) {
+        setBgremovalDir(outputFolderPath + "\\bgremoval");
+      } else {
+        setBgremovalDir("Not Available");
+      }
+    } else {
+      setDerenderDir("");
+      setBgremovalDir("");
+    }
+
+  }, [outputFolderPath])
 
   function runBgRemoval() {
     if (!ipcRenderer) return;
@@ -169,7 +191,7 @@ function RunEngine() {
 
       <div className="flex items-center gap-4 mt-10 mx-2">
         {/* Dropdown Button */}
-        <div className="relative">
+        <div id="dropdown" className="relative" ref={dropdownRef}>
           <button
             className={`w-[150px] text-white ${isEngineRunning ?
               "bg-gray-500 hover:bg-gray-500" : "bg-blue-700 hover:bg-blue-800"} font-medium rounded-lg text-sm px-5 py-2.5 inline-flex items-center`}
@@ -261,23 +283,13 @@ function RunEngine() {
         <br />
         <FolderPicker
           label={"Background Removed\nOutput Dir:"}
-          path={
-            !bgRemovalChecked
-              ? ""
-              : outputFolderPath
-                ? outputFolderPath + "\\bgremoval"
-                : ""
-          }
+          path={bgremovalDir}
           buttonLabel={bgRemovalStatus}
           onClick={null}
         />
         <FolderPicker
           label={"Derendered \nOutput Dir: "}
-          path={
-            outputFolderPath
-              ? outputFolderPath + "\\{ normal,albedo,roughness,specular}"
-              : ""
-          }
+          path={derenderDir}
           buttonLabel={derenderStatus}
           onClick={null}
         />
@@ -298,7 +310,6 @@ function RunEngine() {
             }
           }}
         >
-          {" "}
           <p className="font-bold text-[12px]">Run</p>
         </button>
         <button
@@ -307,7 +318,6 @@ function RunEngine() {
           disabled={isEngineRunning}
           onClick={() => { }}
         >
-          {" "}
           <p className="font-bold text-[12px]">Launch SwitchLight </p>
         </button>
       </div>

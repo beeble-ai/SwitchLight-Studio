@@ -334,7 +334,6 @@ ipcMain.on("update-engine-config", async (event) => {
   const path = require("path");
   const fetch = require("node-fetch");
 
-
   // Check if model update is required
   const response = await fetch(
     "https://desktop.beeble.ai/engine/engine-config.json"
@@ -348,6 +347,7 @@ ipcMain.on("update-engine-config", async (event) => {
 });
 
 ipcMain.on("select-path", async (event, type) => {
+  const fs = require("fs");
   const { dialog } = require("electron");
 
   let result = null;
@@ -372,10 +372,13 @@ ipcMain.on("select-path", async (event, type) => {
   }
 
   const directoryPath = result.filePaths[0];
-  // const files = fs.readdirSync(directoryPath);
 
-  event.reply("select-path", { directoryPath: directoryPath });
-  // , numFiles: files.length });
+  const numFiles = type === "file" ? 1 : fs.readdirSync(directoryPath).length;
+
+  event.reply("select-path", {
+    directoryPath: directoryPath,
+    numFiles: numFiles
+  });
 });
 
 ipcMain.on("run-remove-bg", async (event, args) => {

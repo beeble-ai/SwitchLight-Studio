@@ -9,6 +9,7 @@ import { useLoader, useFrame, Canvas } from "@react-three/fiber";
 import * as THREE from "three";
 import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader";
 import { calculateCamPosition } from "../utils/threejs-functions";
+import { spec } from "node:test/reporters";
 
 const fs = require('fs');
 
@@ -20,9 +21,10 @@ function imageToBase64(path) {
 
 // Texture URLs
 const TEXTURE_URLS = [
+  "https://space-images.beeble.ai/asset/api_docs/albedo_woman_v2_small.avif",
     "https://space-images.beeble.ai/asset/api_docs/normal_woman_v2_small.avif",
-    "https://space-images.beeble.ai/asset/api_docs/albedo_woman_v2_small.avif",
     "https://space-images.beeble.ai/asset/api_docs/roughness_woman_v2_small.avif",
+    "https://space-images.beeble.ai/asset/api_docs/specular_woman_v2_small.avif",
   ]
 
 interface MeshProps {
@@ -33,7 +35,7 @@ export const Mesh: React.FC<MeshProps> = ({ setCamPosition }): ReactElement => {
     const ref = useRef<THREE.Mesh>(null)
 
     // Load textures
-    const [normalMap, albedoMap, roughnessMap] = useLoader(
+    const [albedoMap, normalMap, roughnessMap, specularMap] = useLoader(
       THREE.TextureLoader,
       TEXTURE_URLS
     )
@@ -50,6 +52,7 @@ export const Mesh: React.FC<MeshProps> = ({ setCamPosition }): ReactElement => {
             <meshPhysicalMaterial
               roughnessMap={roughnessMap}
               normalMap={normalMap}
+              specularIntensityMap={specularMap}
               map={albedoMap}
               transparent
             />

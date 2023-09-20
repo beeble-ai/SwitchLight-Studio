@@ -465,8 +465,17 @@ ipcMain.on("run-derender", async (event, args) => {
   const child = require("child_process").exec(command, option);
 
   child.stdout.on("data", (data) => {
-    if (data.includes("55/55 frames")) {
-      event.reply("run-derender", { description: data, isComplete: true });
+
+    if (data.includes("frames")) {
+      let division = data.split("frames")[0];
+      let currentFrame = division.split("/")[0].split("|")[1].trim();
+      let totalFrame = division.split("/")[1].trim();
+
+      if (currentFrame === totalFrame) {
+        event.reply("run-derender", { description: data, isComplete: true });
+      } else {
+        event.reply("run-derender", { description: data, isComplete: false });
+      }
     } else {
       event.reply("run-derender", { description: data, isComplete: false });
     }

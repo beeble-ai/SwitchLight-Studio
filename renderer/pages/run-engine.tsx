@@ -32,6 +32,7 @@ function RunEngine() {
   const [derenderStatus, setDerenderStatus] = useState("Not Started");
 
   const [isEngineRunning, setIsEngineRunning] = useState(false);
+  const [isLaunchPrepared, setIsLaunchPrepared] = useState(false);
 
   const [bgremovalDir, setBgremovalDir] = useState("")
   const [derenderDir, setDerenderDir] = useState("")
@@ -120,6 +121,7 @@ function RunEngine() {
     setTerminalOutput("");
     setInputFolderPath("");
     setOutputFolderPath("");
+    setIsLaunchPrepared(false);
 
   }, [mode, bgRemovalChecked]);
 
@@ -182,7 +184,6 @@ function RunEngine() {
       setTerminalOutput((prev) => (prev ? prev : "") + data["description"]);
 
       if (data["isComplete"]) {
-        ipcRenderer.removeAllListeners("run-derender");
         setIsEngineRunning(false);
 
         ipcRenderer.send("show-dialog", {
@@ -193,6 +194,9 @@ function RunEngine() {
         ipcRenderer.on("show-dialog", (event) => {
           ipcRenderer.removeAllListeners("show-dialog");
         });
+        setIsLaunchPrepared(true);
+        ipcRenderer.removeAllListeners("run-derender");
+
       }
     };
 
@@ -344,9 +348,9 @@ function RunEngine() {
           <p className="font-bold text-[12px]">Run</p>
         </button>
         <button
-          className={`${isEngineRunning ? "bg-gray-500" : "bg-yellow-400"
+          className={`${!isLaunchPrepared ? "bg-gray-500" : "bg-yellow-400"
             } p-2 rounded-lg text-black w-[95px]`}
-          disabled={isEngineRunning}
+          disabled={!isLaunchPrepared}
           onClick={() => { }}
         >
           <p className="font-bold text-[12px]">Launch SwitchLight </p>

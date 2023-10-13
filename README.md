@@ -1,4 +1,4 @@
-# SwitchLight Studio Beta!
+# SwitchLight Studio
 <p align="center"><img src=""></p>
 
 ## Usage

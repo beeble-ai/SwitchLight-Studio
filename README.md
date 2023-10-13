@@ -1,6 +1,9 @@
-<p align="center"><img src="https://i.imgur.com/flcMvDC.png"></p>
+# SwitchLight Studio Beta!
+<p align="center"><img src=""></p>
 
 ## Usage
+
+### SwitchLight Studio is currently in its closed beta. If you'd like to try out, please submit the form in our discord.
 
 ### Create an App
 

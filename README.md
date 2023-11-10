@@ -8,7 +8,7 @@ SwitchLight Studio is a video relighting AI solution for professionals. <br/>Wit
 SwitchLight Studio is currently in its closed beta. If you'd like to try out, please submit the beta application form in our <a href="https://discord.gg/5REz3mzWwj" target="_blank">Discord</a>.
 
 ## SwitchLight Add-on For Blender
-With a single click, you can import your SwitchLight PBR sequences directly onto a dummy plane, facilitating seamless experimentation within your Blender projects. For more details, please see <a href="https://github.com/beeble-ai/SwitchLight-Studio/blender/README.md">README.md</a>
+With a single click, you can import your SwitchLight PBR sequences directly onto a dummy plane, facilitating seamless experimentation within your Blender projects. For more details, please see <a href="https://github.com/beeble-ai/SwitchLight-Studio/blob/main/blender/README.md">README.md</a>
 
 ## SwitchLight Web
 If you'd like to try SwitchLight on still images, no GPU or installations needed, just visit: 

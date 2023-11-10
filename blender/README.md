@@ -13,7 +13,7 @@ Blender installed on your computer.
 ### Step 1: Add-on Download
 
 1. Download the `pbr_loader.py` script from this repository:
-[Download pbr_loader.py](https://github.com/beeble-ai/SwitchLight-Studio/blender/pbr_loader.py)
+[Download pbr_loader.py](https://github.com/beeble-ai/SwitchLight-Studio/blob/main/blender/pbr_loader.py)
 
 ### Step 2: Start Blender
 

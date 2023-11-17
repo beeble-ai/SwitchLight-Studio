@@ -2,7 +2,7 @@ bl_info = {
     "name": "SwitchLight Studio",
     "author": "Beeble Inc.",
     'description': 'SwitchLight Studio Plugin for Blender',
-    'version': (0, 0, 1),
+    'version': (0, 0, 2),
     'blender': (2, 80, 0),
     'location': '3D View',
     'warning': '',
@@ -90,11 +90,34 @@ def create_material(plane_obj, map_paths, frame_start, frame_end):
             mat.node_tree.links.new(bsdf1.inputs['Roughness'], tex_node.outputs['Color'])
             mat.node_tree.links.new(bsdf2.inputs['Roughness'], tex_node.outputs['Color'])
         elif map_type == 'Specular':
-            mat.node_tree.links.new(bsdf1.inputs['Specular'], tex_node.outputs['Color'])
-            mat.node_tree.links.new(bsdf2.inputs['Specular'], tex_node.outputs['Color'])
+            # blender 4.x
+            if bpy.app.version[0] == 4:
+                spec_math_node1 = mat.node_tree.nodes.new('ShaderNodeMath')
+                spec_math_node1.operation = 'MULTIPLY'
+                spec_math_node1.inputs[1].default_value = -0.4
+                spec_math_node2 = mat.node_tree.nodes.new('ShaderNodeMath')
+                spec_math_node2.operation = 'ADD'
+                spec_math_node2.inputs[1].default_value = 1.0
+                spec_math_node3 = mat.node_tree.nodes.new('ShaderNodeMath')
+                spec_math_node3.operation = 'DIVIDE'
+                spec_math_node3.inputs[0].default_value = 2.0
+                spec_math_node4 = mat.node_tree.nodes.new('ShaderNodeMath')
+                spec_math_node4.operation = 'ADD'
+                spec_math_node4.inputs[1].default_value = -1.0
+                # Refletivity -> IOR
+                mat.node_tree.links.new(spec_math_node1.inputs[0], tex_node.outputs['Color'])
+                mat.node_tree.links.new(spec_math_node2.inputs[0], spec_math_node1.outputs[0])
+                mat.node_tree.links.new(spec_math_node3.inputs[1], spec_math_node2.outputs[0])
+                mat.node_tree.links.new(spec_math_node4.inputs[0], spec_math_node3.outputs[0])
+                # IOR
+                mat.node_tree.links.new(bsdf1.inputs['IOR'], spec_math_node4.outputs[0])
+                mat.node_tree.links.new(bsdf2.inputs['IOR'], spec_math_node4.outputs[0])
+            else:
+                mat.node_tree.links.new(bsdf1.inputs['Specular'], tex_node.outputs['Color'])
+                mat.node_tree.links.new(bsdf2.inputs['Specular'], tex_node.outputs['Color'])
         elif map_type == 'Key':
-            mat.node_tree.links.new(bsdf1.inputs['Alpha'], tex_node.outputs['Color'])
-            mat.node_tree.links.new(bsdf2.inputs['Alpha'], tex_node.outputs['Color'])
+            mat.node_tree.links.new(bsdf1.inputs['Alpha'], tex_node.outputs['Alpha'])
+            mat.node_tree.links.new(bsdf2.inputs['Alpha'], tex_node.outputs['Alpha'])
 
     # Assign the material to the object
     if len(plane_obj.data.materials):
@@ -191,7 +214,15 @@ def import_pbr_sequence(context):
     light_data = bpy.data.lights.new(name="SwitchLightPointLight", type='POINT')
     light_obj = bpy.data.objects.new(name="SwitchLightPointLight", object_data=light_data)
     context.collection.objects.link(light_obj)
-    light_obj.location = (0.0, 0.0, plane_obj.location.z + 0.1)  # 0.1m above the plane
+    # 0.1 meters above the plane
+    if bpy.app.version[0] == 4:
+        light_obj.location = (
+            plane_obj.location.x + plane_obj.scale.x / 2,
+            plane_obj.location.y - 0.1,
+            plane_obj.location.z,
+        )
+    else:
+        light_obj.location = (0.0, 0.0, plane_obj.location.z + 0.1)
 
 
 """ Export the rendered image """

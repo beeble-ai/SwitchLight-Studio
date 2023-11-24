@@ -2,7 +2,7 @@ bl_info = {
     "name": "SwitchLight Studio",
     "author": "Beeble Inc.",
     'description': 'SwitchLight Studio Plugin for Blender',
-    'version': (0, 0, 2),
+    'version': (0, 0, 3),
     'blender': (2, 80, 0),
     'location': '3D View',
     'warning': '',
@@ -22,18 +22,30 @@ def create_material(plane_obj, map_paths, frame_start, frame_end):
     mat = bpy.data.materials.new(name="GeneratedMaterial")
     mat.use_nodes = True
 
+    for node in mat.node_tree.nodes:
+        mat.node_tree.nodes.remove(node)
+
     # Create two Principled BSDF nodes
-    bsdf1 = mat.node_tree.nodes["Principled BSDF"]
-    bsdf1.name = "FullBSDF"
-    bsdf2 = mat.node_tree.nodes.new('ShaderNodeBsdfPrincipled')
-    bsdf2.name = "SpecularBSDF"
-    bsdf3 = mat.node_tree.nodes.new("ShaderNodeBsdfDiffuse")
-    bsdf3.name = "DiffuseBSDF"
+    # Create Full BSDF Node and Frame
+    bsdf_node = mat.node_tree.nodes.new('ShaderNodeBsdfPrincipled')
+    bsdf_node.name = "FullBSDF"
+    bsdf_node.location = (-500, -100)
+
+    frames = {}
 
     # For each map type and its path
     for map_type, sequence_paths in map_paths.items():
+        # Create a frame for each map type
+        frame = mat.node_tree.nodes.new('NodeFrame')
+        frame.label = map_type + " Frame"
+        frames[map_type] = frame
+
+        index = list(map_paths.keys()).index(map_type)
+
         # Create a new image texture node
         tex_node = mat.node_tree.nodes.new('ShaderNodeTexImage')
+        tex_node.parent = frame
+        tex_node.location = (-1100, -300 * index)  # Example positioning
         # Load image or image sequence based on the number of paths
         if len(sequence_paths) == 1:  # If only one image, load it directly
             img = bpy.data.images.load(sequence_paths[0])
@@ -60,64 +72,59 @@ def create_material(plane_obj, map_paths, frame_start, frame_end):
             vec_mult_node1 = mat.node_tree.nodes.new('ShaderNodeVectorMath')
             vec_mult_node1.operation = 'MULTIPLY'
             vec_mult_node1.inputs[1].default_value = (1.0, 1.0, 1.0)
-            # Specular Render
-            vec_mult_node2 = mat.node_tree.nodes.new('ShaderNodeVectorMath')
-            vec_mult_node2.operation = 'MULTIPLY'
-            vec_mult_node2.inputs[1].default_value = (0.0, 0.0, 0.0)
-            # Diffuse Render
-            vec_mult_node3 = mat.node_tree.nodes.new('ShaderNodeVectorMath')
-            vec_mult_node3.operation = 'MULTIPLY'
-            vec_mult_node3.inputs[1].default_value = (1.0, 1.0, 1.0)
+            vec_mult_node1.parent = frame
+            vec_mult_node1.location = (-800, -300 * index - 200)  # Example positioning
             # Link the color output of the texture to the vector math nodes
             mat.node_tree.links.new(vec_mult_node1.inputs[0], tex_node.outputs['Color'])
-            mat.node_tree.links.new(vec_mult_node2.inputs[0], tex_node.outputs['Color'])
-            mat.node_tree.links.new(vec_mult_node3.inputs[0], tex_node.outputs['Color'])
-            # mat.node_tree.links.new(bsdf.inputs['Base Color'], tex_node.outputs['Color'])
-            mat.node_tree.links.new(bsdf1.inputs['Base Color'], vec_mult_node1.outputs[0])
-            mat.node_tree.links.new(bsdf2.inputs['Base Color'], vec_mult_node2.outputs[0])
-            mat.node_tree.links.new(bsdf3.inputs['Color'], vec_mult_node3.outputs[0])
-            mat.node_tree.links.new(bsdf1.inputs['Alpha'], tex_node.outputs['Alpha'])
-            mat.node_tree.links.new(bsdf2.inputs['Alpha'], tex_node.outputs['Alpha'])
-            # Set the material's blend mode to ALPHA_HASHED when the map_type is Albedo
+            mat.node_tree.links.new(bsdf_node.inputs['Base Color'], vec_mult_node1.outputs[0])
+            mat.node_tree.links.new(bsdf_node.inputs['Alpha'], tex_node.outputs['Alpha'])
             mat.blend_method = 'HASHED'
         elif map_type == 'Normal':
             normal_map_node = mat.node_tree.nodes.new('ShaderNodeNormalMap')
+            normal_map_node.parent = frame
+            normal_map_node.location = (-800, -300 * index)  # Example positioning
             mat.node_tree.links.new(normal_map_node.inputs['Color'], tex_node.outputs['Color'])
-            mat.node_tree.links.new(bsdf1.inputs['Normal'], normal_map_node.outputs['Normal'])
-            mat.node_tree.links.new(bsdf2.inputs['Normal'], normal_map_node.outputs['Normal'])
-            mat.node_tree.links.new(bsdf3.inputs['Normal'], normal_map_node.outputs['Normal'])
+            mat.node_tree.links.new(bsdf_node.inputs['Normal'], normal_map_node.outputs['Normal'])
         elif map_type == 'Roughness':
-            mat.node_tree.links.new(bsdf1.inputs['Roughness'], tex_node.outputs['Color'])
-            mat.node_tree.links.new(bsdf2.inputs['Roughness'], tex_node.outputs['Color'])
+            mat.node_tree.links.new(bsdf_node.inputs['Roughness'], tex_node.outputs['Color'])
         elif map_type == 'Specular':
             # blender 4.x
             if bpy.app.version[0] == 4:
                 spec_math_node1 = mat.node_tree.nodes.new('ShaderNodeMath')
                 spec_math_node1.operation = 'MULTIPLY'
                 spec_math_node1.inputs[1].default_value = -0.4
+                spec_math_node1.parent = frame
+                spec_math_node1.location = (-800, -300 * index)
                 spec_math_node2 = mat.node_tree.nodes.new('ShaderNodeMath')
                 spec_math_node2.operation = 'ADD'
                 spec_math_node2.inputs[1].default_value = 1.0
+                spec_math_node2.parent = frame
+                spec_math_node2.location = (-600, -300 * index)
                 spec_math_node3 = mat.node_tree.nodes.new('ShaderNodeMath')
                 spec_math_node3.operation = 'DIVIDE'
                 spec_math_node3.inputs[0].default_value = 2.0
+                spec_math_node3.parent = frame
+                spec_math_node3.location = (-400, -300 * index)
                 spec_math_node4 = mat.node_tree.nodes.new('ShaderNodeMath')
                 spec_math_node4.operation = 'ADD'
                 spec_math_node4.inputs[1].default_value = -1.0
+                spec_math_node4.parent = frame
+                spec_math_node4.location = (-200, -300 * index)
                 # Refletivity -> IOR
                 mat.node_tree.links.new(spec_math_node1.inputs[0], tex_node.outputs['Color'])
                 mat.node_tree.links.new(spec_math_node2.inputs[0], spec_math_node1.outputs[0])
                 mat.node_tree.links.new(spec_math_node3.inputs[1], spec_math_node2.outputs[0])
                 mat.node_tree.links.new(spec_math_node4.inputs[0], spec_math_node3.outputs[0])
                 # IOR
-                mat.node_tree.links.new(bsdf1.inputs['IOR'], spec_math_node4.outputs[0])
-                mat.node_tree.links.new(bsdf2.inputs['IOR'], spec_math_node4.outputs[0])
+                mat.node_tree.links.new(bsdf_node.inputs['IOR'], spec_math_node4.outputs[0])
             else:
-                mat.node_tree.links.new(bsdf1.inputs['Specular'], tex_node.outputs['Color'])
-                mat.node_tree.links.new(bsdf2.inputs['Specular'], tex_node.outputs['Color'])
+                mat.node_tree.links.new(bsdf_node.inputs['Specular'], tex_node.outputs['Color'])
         elif map_type == 'Key':
-            mat.node_tree.links.new(bsdf1.inputs['Alpha'], tex_node.outputs['Alpha'])
-            mat.node_tree.links.new(bsdf2.inputs['Alpha'], tex_node.outputs['Alpha'])
+            mat.node_tree.links.new(bsdf_node.inputs['Alpha'], tex_node.outputs['Alpha'])
+
+        # Position the frame
+        frame.location = (-1000, -300 * index)  # Example positioning
+
 
     # Assign the material to the object
     if len(plane_obj.data.materials):
@@ -134,20 +141,11 @@ def create_material(plane_obj, map_paths, frame_start, frame_end):
     output_node_full = next((node for node in mat.node_tree.nodes if node.type == 'OUTPUT_MATERIAL' and node.name == "Output_Full"), None)
     if not output_node_full:
         output_node_full = mat.node_tree.nodes.new('ShaderNodeOutputMaterial')
+        output_node_full.location = (500, 0)
         output_node_full.name = "Output_Full"
-    output_node_specular = next((node for node in mat.node_tree.nodes if node.type == 'OUTPUT_MATERIAL' and node.name == "Output_Specular"), None)
-    if not output_node_specular:
-        output_node_specular = mat.node_tree.nodes.new('ShaderNodeOutputMaterial')
-        output_node_specular.name = "Output_Specular"
-    output_node_diffuse = next((node for node in mat.node_tree.nodes if node.type == 'OUTPUT_MATERIAL' and node.name == "Output_Diffuse"), None)
-    if not output_node_diffuse:
-        output_node_diffuse = mat.node_tree.nodes.new('ShaderNodeOutputMaterial')
-        output_node_diffuse.name = "Output_Diffuse"
 
     # Connect the BSDF shaders to the Material Output nodes
-    mat.node_tree.links.new(output_node_full.inputs['Surface'], bsdf1.outputs['BSDF'])
-    mat.node_tree.links.new(output_node_specular.inputs['Surface'], bsdf2.outputs['BSDF'])
-    mat.node_tree.links.new(output_node_diffuse.inputs['Surface'], bsdf3.outputs['BSDF'])
+    mat.node_tree.links.new(output_node_full.inputs['Surface'], bsdf_node.outputs['BSDF'])
 
 
 

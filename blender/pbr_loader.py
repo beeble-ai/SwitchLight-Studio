@@ -2,7 +2,7 @@ bl_info = {
     "name": "SwitchLight Studio",
     "author": "Beeble Inc.",
     'description': 'SwitchLight Studio Plugin for Blender',
-    'version': (0, 0, 3),
+    'version': (0, 0, 4),
     'blender': (2, 80, 0),
     'location': '3D View',
     'warning': '',
@@ -49,6 +49,9 @@ def create_material(plane_obj, map_paths, frame_start, frame_end):
         # Load image or image sequence based on the number of paths
         if len(sequence_paths) == 1:  # If only one image, load it directly
             img = bpy.data.images.load(sequence_paths[0])
+            # exr handle
+            if map_type == "Albedo" and sequence_paths[0].lower().endswith(".exr"):
+                img.colorspace_settings.name = 'Non-Color'
             if map_type in ['Normal', 'Roughness', 'Specular']:
                 img.colorspace_settings.name = 'Non-Color'
             tex_node.image = img
@@ -62,6 +65,9 @@ def create_material(plane_obj, map_paths, frame_start, frame_end):
             for i, path in enumerate(sequence_paths):
                 img = bpy.data.images.load(path)
                 img.source = 'SEQUENCE'
+                # exr handle
+                if map_type == "Albedo" and path.lower().endswith(".exr"):
+                    img.colorspace_settings.name = 'Non-Color'
                 if map_type in ['Normal', 'Roughness', 'Specular']:
                     img.colorspace_settings.name = 'Non-Color'
                 tex_node.image = img

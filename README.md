@@ -10,6 +10,14 @@ SwitchLight Studio is currently in its closed beta. If you'd like to try out, pl
 ## SwitchLight Add-on For Blender
 With a single click, you can import your SwitchLight PBR sequences directly onto a dummy plane, facilitating seamless experimentation within your Blender projects. For more details, please see <a href="https://github.com/beeble-ai/SwitchLight-Studio/blob/main/blender/README.md">README.md</a>
 
+## SwitchLight Python Script For UE
+This script automates the import and application of SwitchLight PBR materials in Unreal Engine. Key features include:
+- Creation of Img Media Sources, Media textures, and Media players from PBR maps.
+- BSDF material setup with integrated color space conversion and normal map processing.
+- Level Sequencer setup for rendering 3D scenes and materials using the Movie Render Queue.
+
+For more details, please see <a href="https://github.com/beeble-ai/SwitchLight-Studio/blob/main/unreal/README.md">README.md</a>
+
 ## SwitchLight Web
 If you'd like to try SwitchLight on still images, no GPU or installations needed, just visit: 
 <a href="(https://switchlight.beeble.ai/)" target="_blank"> https://switchlight.beeble.ai/</a>

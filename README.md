@@ -16,7 +16,7 @@ This script automates the import and application of SwitchLight PBR materials in
 - BSDF material setup with integrated color space conversion and normal map processing.
 - Level Sequencer setup for rendering 3D scenes and materials using the Movie Render Queue.
 
-For more details, please see <a href="https://github.com/beeble-ai/SwitchLight-Studio/blob/main/unreal/README.md">README.md</a>
+For more details, please see <a href="https://github.com/beeble-ai/SwitchLight-Studio/blob/main/unreal_engine/README.md">README.md</a>
 
 ## SwitchLight Web
 If you'd like to try SwitchLight on still images, no GPU or installations needed, just visit: 

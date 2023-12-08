@@ -23,6 +23,7 @@ Key features include:
 2. [Recommended Setup](#2-recommended-setup)
    - [2.1 High Quality Translucency Reflections](#21-high-quality-translucency-reflections)
    - [2.2 Use Lumen for Reflections & Global Illumination](#22-use-lumen-for-reflections--global-illumination)
+   - [2.3 Support Hardware Raytracing](#23-support-hardware-raytracing)
 3. [Usage](#3-usage)
    - [3.1 Load PBR Maps Using the Script](#31-load-pbr-maps-using-the-script)
    - [3.2 Render Using Movie Render Queue](#32-render-using-movie-render-queue)
@@ -87,6 +88,13 @@ Key features include:
 1. Navigate to 'Edit' > 'Project Settings'. Find 'Reflections' & 'Global Illuminations'. Ensure that Lumen is selected for both of these features.
    
    ![Lumen for Reflections and Global Illumination](https://desktop.beeble.ai/public/unreal_readme/lumen.png)
+
+
+#### 2.3 Support Hardware Raytracing
+
+1. Navigate to 'Edit' > 'Project Settings'. Find 'Support Hardware Raytracing'. and make sure to enable this feature.
+
+   ![Support Hardware Raytracing](https://desktop.beeble.ai/public/unreal_readme/raytracing.png)
 
 ### 3. Usage
 

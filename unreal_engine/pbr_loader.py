@@ -15,9 +15,6 @@ custom_menu = main_menu.add_sub_menu("CustomMenu", "Custom Menu", "Menu name", "
 AssetTools = unreal.AssetToolsHelpers.get_asset_tools()
 EditorAssetLibrary = unreal.EditorAssetLibrary
 
-# Define the base path to your textures and the Unreal asset path
-asset_path = "/Game/Movies/SwitchLight"
-
 # Define the naming convention for your PBR maps
 texture_bases = ["albedo", "normal", "roughness", "specular"]
 texture_types = {
@@ -52,7 +49,19 @@ history = custom_menu.add_sub_menu(
 menus.refresh_all_widgets()
 
 
-def get_dimensions(file_path):
+# Define the base path to your textures and the Unreal asset path
+def generate_unique_asset_path(base_path):
+    """
+    Generates a unique asset path by appending a number to the base path.
+    """
+    number = 0
+    unique_path = f"{base_path}_{number:04d}"
+    while unreal.EditorAssetLibrary.does_directory_exist(unique_path):
+        number += 1
+        unique_path = f"{base_path}_{number:04d}"
+    return unique_path, f"{number:04d}"
+
+def get_dimensions(asset_path, file_path):
 
     task = unreal.AssetImportTask()
     task.filename = file_path
@@ -101,20 +110,23 @@ def run():
     root.destroy()
     if directory_path:
         unreal.log("Selected Directory: " + directory_path)
-        camera_actor, camera_aspect_ratio = create_camera_actor()
-        is_png, num_frames, width, height = load_media_source(source_directory=directory_path)
-        create_media_texture_and_player(is_png)
-        create_material_graph(is_png)
-        create_plane(camera_actor, camera_aspect_ratio, height, width)
-        create_level_sequence(camera_actor, num_frames)
+        asset_path, asset_index = generate_unique_asset_path( "/Game/Movies/SwitchLight")
+
+        unreal.log("================= Asset Path: " + asset_path)
+        camera_actor, camera_aspect_ratio = create_camera_actor(asset_index)
+        is_png, num_frames, width, height = load_media_source(asset_path, source_directory=directory_path)
+        create_media_texture_and_player(asset_path, is_png)
+        create_material_graph(asset_path, is_png)
+        create_plane(asset_path, asset_index, camera_aspect_ratio, height, width)
+        create_level_sequence(asset_path, camera_actor, num_frames)
         add_history(directory_path)
 
-def create_camera_actor():
+def create_camera_actor(asset_index):
     # Create a camera actor
     camera_actor = unreal.EditorLevelLibrary.spawn_actor_from_class(
         unreal.CineCameraActor, location=unreal.Vector(0, 0, 100), rotation=unreal.Rotator(0, 0, 0))
     if camera_actor:
-        camera_actor.set_actor_label('SwitchLight Camera')
+        camera_actor.set_actor_label('SwitchLight Camera ' + asset_index)
         camera_component = camera_actor.get_cine_camera_component()
 
         camera_aspect_ratio = camera_component.get_editor_property("filmback").get_editor_property("sensor_aspect_ratio")
@@ -130,13 +142,13 @@ def create_camera_actor():
     return camera_actor, camera_aspect_ratio
 
 
-def create_plane(camera_actor=None, camera_aspect_ratio=16/9, height=1.0, width=1.0):
+def create_plane(asset_path, asset_index, camera_aspect_ratio=16/9, height=1.0, width=1.0):
     # camera horizontal fov is always 90
     # since plane width and height are 100, distance from camera to plane should be 50
     mesh_actor = unreal.EditorLevelLibrary.spawn_actor_from_class(unreal.StaticMeshActor, location=unreal.Vector(50, 0, 100), rotation=unreal.Rotator(90, 0, 90))
     mesh_aspect_ratio = width / height
     if mesh_actor:
-        mesh_actor.set_actor_label('SwitchLight Plane')
+        mesh_actor.set_actor_label('SwitchLight Plane ' + asset_index)
         mesh_component = mesh_actor.get_component_by_class(unreal.StaticMeshComponent.static_class())
         if mesh_component:
             mesh_component.set_static_mesh(unreal.load_asset("/Engine/BasicShapes/Plane"))
@@ -214,7 +226,7 @@ def create_channel_splitter(material, texture_node, r=False, g=False, b=False, p
     return mask_node
 
 
-def create_material_graph(is_png=False):
+def create_material_graph(asset_path, is_png=False):
     ''' Create PBR material '''
     # Check if the base material already exists
     material_asset_path = f"{asset_path}/PBR_Material"
@@ -311,7 +323,7 @@ def create_material_graph(is_png=False):
     unreal.MaterialEditingLibrary.recompile_material(mat_closure)
 
 
-def load_media_source(source_directory):
+def load_media_source(asset_path, source_directory):
     ''' Load media source '''
     image_media_factory = unreal.ImgMediaSourceFactoryNew()
 
@@ -343,7 +355,7 @@ def load_media_source(source_directory):
             unreal.log_error("All textures must be either png or exr")
 
     # get dimensions
-    width, height = get_dimensions(source_paths[0])
+    width, height = get_dimensions(asset_path, source_paths[0])
 
     unreal.log("is_png_list: " + str(len(is_png_list)))
 
@@ -351,7 +363,7 @@ def load_media_source(source_directory):
 
     return is_png, len(is_png_list) / len(texture_types), width, height
 
-def create_media_texture_and_player(is_png=True):
+def create_media_texture_and_player(asset_path, is_png=True):
 
     # Create a Media Texture asset
     media_texture_factory = unreal.MediaTextureFactoryNew()
@@ -380,7 +392,7 @@ def create_media_texture_and_player(is_png=True):
     unreal.log("Media Texture and Player created successfully.")
 
 
-def create_level_sequence(camera_actor, num_frames=1000):
+def create_level_sequence(asset_path, camera_actor, num_frames=1000):
 
     unreal.log("Creating Level Sequence... " + str(num_frames) + " frames")
     # Create a Level Sequence asset

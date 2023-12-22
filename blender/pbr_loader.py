@@ -2,7 +2,7 @@ bl_info = {
     "name": "SwitchLight Studio",
     "author": "Beeble Inc.",
     'description': 'SwitchLight Studio Plugin for Blender',
-    'version': (0, 0, 4),
+    'version': (0, 1, 0),
     'blender': (2, 80, 0),
     'location': '3D View',
     'warning': '',
@@ -11,10 +11,37 @@ bl_info = {
 
 import os
 import math
+import json
 import glob
+import subprocess
+
 import bpy
+import mathutils
+
+from bpy.props import StringProperty, BoolProperty
+from bpy.types import Operator, Panel
+
+from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import axis_conversion
 
 DISTANCE_FROM_CAMERA = 1
+
+UNITY2BLENDER = axis_conversion(from_forward='Z', from_up='Y', to_forward='-Y', to_up='Z').to_4x4()
+
+IDENTITY_MATRIX = mathutils.Matrix.Identity(4)
+
+ORIENTATION_PORTRAIT = 1
+ORIENTATION_UPSIDE_DOWN = 2
+ORIENTATION_LANDSCAPE_LEFT = 3
+ORIENTATION_LANDSCAPE_RIGHT = 4
+
+RAD_PORTRAIT = math.radians(0)
+RAD_LANDSCAPE_LEFT = math.radians(0)
+RAD_LANDSCAPE_RIGHT = math.radians(180)
+
+ROTATE_PORTRAIT = mathutils.Matrix.Rotation(RAD_PORTRAIT, 4, 'Z')
+ROTATE_LANDSCAPE_LEFT = mathutils.Matrix.Rotation(RAD_LANDSCAPE_LEFT, 4, 'Z')
+ROTATE_LANDSCAPE_RIGHT = mathutils.Matrix.Rotation(RAD_LANDSCAPE_RIGHT, 4, 'Z')
 
 
 def create_material(plane_obj, map_paths, frame_start, frame_end):
@@ -25,7 +52,6 @@ def create_material(plane_obj, map_paths, frame_start, frame_end):
     for node in mat.node_tree.nodes:
         mat.node_tree.nodes.remove(node)
 
-    # Create two Principled BSDF nodes
     # Create Full BSDF Node and Frame
     bsdf_node = mat.node_tree.nodes.new('ShaderNodeBsdfPrincipled')
     bsdf_node.name = "FullBSDF"
@@ -154,10 +180,234 @@ def create_material(plane_obj, map_paths, frame_start, frame_end):
     mat.node_tree.links.new(output_node_full.inputs['Surface'], bsdf_node.outputs['BSDF'])
 
 
+def update_plane_scale(scene):
+    cam = bpy.data.objects['ARCamera']  # Replace with your camera name
+    plane = bpy.data.objects['SwitchLightPlane']  # Replace with your plane name
+   # Calculate the field of view in the vertical direction
+    sensor_height = cam.data.sensor_height
+    focal_length = cam.data.lens
+    fov_vertical = 2 * math.atan((sensor_height / (2 * focal_length)))
+
+    aspect_ratio = scene.render.resolution_x / scene.render.resolution_y
+
+    # Calculate the plane scales
+    plane.scale.y = DISTANCE_FROM_CAMERA * math.tan(fov_vertical / 2) * 2
+    plane.scale.x = plane.scale.y * aspect_ratio
+
+
+def import_pbr_sequence_and_camtrack_data(self, context):
+    scene = context.scene
+    filepath = context.scene.tool.camtrack_file_path
+
+    # Parse json data
+    with open(filepath, 'r') as f:
+        data = json.load(f)
+
+    # Pull out relevant properties
+    render_data = data.get('render_data') or {}
+    camera_frames = data.get('camera_frames') or []
+    camera_timestamps = camera_frames.get('timestamps') or []
+    camera_transforms = camera_frames.get('transforms') or []
+    camera_datas = camera_frames.get('datas') or []
+    planes = data.get('planes') or []
+    tracked_transforms = data.get('tracked_transforms') or []
+
+    resolution_x = render_data['video_resolution_x']
+    resolution_y = render_data['video_resolution_y']
+
+    camera_rotation = IDENTITY_MATRIX
+    video_orientation = render_data['orientation']
+    if video_orientation == ORIENTATION_PORTRAIT:
+        camera_rotation = ROTATE_PORTRAIT
+    elif video_orientation == ORIENTATION_LANDSCAPE_LEFT:
+        camera_rotation = ROTATE_LANDSCAPE_LEFT
+    elif video_orientation == ROTATE_LANDSCAPE_RIGHT:
+        camera_rotation = ROTATE_LANDSCAPE_RIGHT
+
+    # Render settings that we want to switch all the time
+    scene.render.ffmpeg.audio_codec = 'AAC'
+
+    # Setup render settings
+    fps = render_data['fps']
+    scene.render.fps = fps
+    scene.render.resolution_x = resolution_x
+    scene.render.resolution_y = resolution_y
+    scene.render.film_transparent = False
+
+    # Setup scene settings
+
+    print("Camera Timestamp", len(camera_timestamps))
+    if len(camera_timestamps) > 0:
+        scene.frame_end = max(int(math.ceil(camera_timestamps[-1] * fps)), 1)
+
+    bpy.ops.object.add()
+    root = context.object
+    root.name = 'SL CamTrack'
+
+    # Create camera
+    bpy.ops.object.camera_add(enter_editmode=False)
+    cam = context.active_object
+    cam.data.sensor_fit = 'VERTICAL'
+    cam.data.lens_unit = 'MILLIMETERS'
+    cam.data.clip_start = 0.1
+    cam.data.clip_end = 1000.0
+
+    cam.name = 'ARCamera'
+    cam.parent = root
+
+    # # Setup video background
+    video_filepath = filepath.replace('camera.json', 'raw.mp4')
+
+    # Ensure that there's a sequencer
+    if not scene.sequence_editor:
+        scene.sequence_editor_create()
+
+
+    # Add the video background audio clip to the sequencer
+    # check file existence of video_filepath
+    if os.path.isfile(video_filepath):
+        scene.sequence_editor.sequences.new_sound('background_audio', video_filepath, 1, 1)
+
+    # Switch the 3D windows to view through the new camera with the background
+    for screen in context.workspace.screens:
+        for area in screen.areas:
+            for space in area.spaces:
+                if space.type == 'VIEW_3D':
+                    space.camera = cam
+                    # space.region_3d.view_perspective = 'CAMERA'
+
+    # Create camera animation
+    for idx, timestamp in enumerate(camera_timestamps):
+        try:
+            mat = mathutils.Matrix(camera_transforms[idx])
+            data = camera_datas[idx]
+        except IndexError:
+            continue
+        focal_length, sensor_height = data[0], data[1]
+
+        frameidx = max(int(math.ceil(timestamp * fps)), 1)
+
+        scene.frame_set(frameidx)
+
+        cam.data.lens = focal_length
+        cam.data.sensor_height = sensor_height
+        assert cam.data.keyframe_insert('lens', frame=frameidx), 'Could not insert lens keyframe'
+
+        cam.matrix_world = UNITY2BLENDER @ (mat @ camera_rotation)
+
+        # Note that we only save the loc and rot keyframes, but it does apply the scale to the camera
+        bpy.ops.anim.keyframe_insert_menu(type='BUILTIN_KSI_LocRot')
+
+    # Rewind back to the first frame
+    scene.frame_set(1)
+
+    # After setting up the camera, call the function to add the plane
+    add_plane_fitted_to_camera_view(context, cam)
+
+    # Attach the function to frame change handler
+    bpy.app.handlers.frame_change_pre.append(update_plane_scale)
+
+    # Add planes
+    for plane_index, plane in enumerate(planes):
+        bpy.ops.mesh.primitive_plane_add(size=1.0, calc_uvs=True, enter_editmode=False, align='WORLD')
+        plane_obj = context.object
+        plane_obj.parent = root
+        plane_obj.name = '%s Plane [%d]' % (plane['alignment'].capitalize(), plane_index + 1)
+        plane_obj.display_type = 'WIRE'
+        plane_obj.hide_render = True
+        plane_obj.matrix_world = (UNITY2BLENDER @ mathutils.Matrix(plane['transform']))
+
+        # Make sure cycles visibility is also disabled, first using the older method of `cycles_visibility``
+        visibility = getattr(plane_obj, 'cycles_visibility', None)
+        if visibility is not None:
+            visibility.camera = False
+            visibility.diffuse = False
+            visibility.glossy = False
+            visibility.transmission = False
+            visibility.scatter = False
+
+        # Then using the newer method of `visible_*`
+        plane_obj.visible_camera = False
+        plane_obj.visible_diffuse = False
+        plane_obj.visible_glossy = False
+        plane_obj.visible_shadow = False
+        plane_obj.visible_transmission = False
+        plane_obj.visible_volume_scatter = False
+
+    # Add tracked empty transforms
+    for track_index, tfm in enumerate(tracked_transforms):
+        bpy.ops.object.add()
+        tracked_obj = context.object
+        tracked_obj.parent = root
+        tracked_obj.name = 'Anchor [%d]' % (track_index + 1,)
+        tracked_obj.empty_display_size = 0.2
+        tracked_obj.matrix_world = UNITY2BLENDER @ mathutils.Matrix(tfm)
+
+    # Select the camera object again so that the user can adjust any keyframes as needed
+    for obj in bpy.data.objects:
+        obj.select_set(False)
+    cam.select_set(True)
+
+    return {'FINISHED'}
+
+
+def add_plane_fitted_to_camera_view(context, cam):
+    bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, align='WORLD')
+    plane = context.object
+    plane.name = "SwitchLightPlane"
+
+    # Set the plane's initial position to the camera's position
+    plane.location = cam.location
+
+    # Calculate the height and width of the plane based on FOV and distance from camera
+    aspect_ratio = context.scene.render.resolution_x / context.scene.render.resolution_y
+
+    # Resizing the plane
+    plane.scale.x = DISTANCE_FROM_CAMERA * aspect_ratio
+    plane.scale.y = DISTANCE_FROM_CAMERA
+
+    # TODO: RPY rotation
+    # Setting the rotation of the plane to match the camera
+    plane.rotation_euler = cam.rotation_euler
+
+    # Offset the plane along the camera's local -Z axis (viewing direction)
+    offset_direction = cam.matrix_world.to_quaternion() @ mathutils.Vector((0, 0, -DISTANCE_FROM_CAMERA))
+    plane.location += offset_direction
+
+    # Apply Child Of constraint to make the plane follow the camera
+    child_of_constraint = plane.constraints.new('CHILD_OF')
+    child_of_constraint.target = cam
+
+    # Apply Track To constraint to make the plane always face the camera
+    track_to_constraint = plane.constraints.new('TRACK_TO')
+    track_to_constraint.target = cam
+    track_to_constraint.track_axis = 'TRACK_Z'
+    track_to_constraint.up_axis = 'UP_Y'
+
+    # Apply Copy Rotation constraint to make the plane follow the camera's rotation
+    copy_rot_constraint = plane.constraints.new('COPY_ROTATION')
+    copy_rot_constraint.target = cam
+    copy_rot_constraint.use_offset = False  # The plane's rotation will match exactly the camera's rotation
+
+    selected_directory = bpy.context.scene.tool.pbr_path
+
+    map_paths = {
+        'Albedo': glob.glob(os.path.join(selected_directory, "albedo/albedo_*")),
+        'Normal': glob.glob(os.path.join(selected_directory, "normal/normal_*")),
+        'Roughness': glob.glob(os.path.join(selected_directory, "roughness/roughness_*")),
+        'Specular': glob.glob(os.path.join(selected_directory, "specular/specular_*")),
+        'Key': glob.glob(os.path.join(selected_directory, "key/key_*")),
+    }
+
+    frame_start = 1
+    frame_end = min(context.scene.frame_end, len(map_paths['Albedo']))  # Assuming all maps have the same number of frames
+
+    create_material(plane, map_paths, frame_start, frame_end)
+
 
 def import_pbr_sequence(context):
 
-    selected_directory = bpy.context.scene.my_tool.pbr_path
+    selected_directory = bpy.context.scene.tool.pbr_path
 
     map_paths = {
         'Albedo': glob.glob(os.path.join(selected_directory, "albedo/albedo_*")),
@@ -229,6 +479,10 @@ def import_pbr_sequence(context):
         light_obj.location = (0.0, 0.0, plane_obj.location.z + 0.1)
 
 
+def update_camtrack_file_path(self, context):
+    self.camtrack_file_path = os.path.join(self.camtrack_path, "camera.json")
+
+
 """ Export the rendered image """
 # Property group containing a string property for the directory path
 class DirProperties(bpy.types.PropertyGroup):
@@ -238,6 +492,7 @@ class DirProperties(bpy.types.PropertyGroup):
         default="",
         maxlen=1024,
         subtype='DIR_PATH')
+
     pbr_path: bpy.props.StringProperty(
         name="PBR Directory",
         description="Choose a PBR directory:",
@@ -245,6 +500,58 @@ class DirProperties(bpy.types.PropertyGroup):
         maxlen=1024,
         subtype='DIR_PATH'
     )
+
+    camtrack_path: bpy.props.StringProperty(
+        name="SL CamTrack Directory",
+        description="Choose SL CamTrack Directory:",
+        default="",
+        maxlen=1024,
+        subtype='DIR_PATH',
+        update=update_camtrack_file_path)
+
+    camtrack_file_path: bpy.props.StringProperty(
+        name="SL CamTrack Directory",
+        description="Choose SL CamTrack Data:",
+        default="",
+        maxlen=1024,
+        subtype='FILE_PATH')
+
+# class ImportCamTrackFile(Operator, ImportHelper):
+#     bl_idname = "beeble.sl_camtrack"
+#     bl_label = "SL CamTrack File (.json)"
+
+#     # ImportHelper mixin class uses this
+#     filename_ext = ".json"
+
+#     filter_glob: StringProperty(
+#         default="*.json",
+#         options={'HIDDEN'},
+#         maxlen=255,  # Max internal buffer length, longer would be clamped.
+#     )
+
+#     def execute(self, context):
+#         context.scene.tool.camtrack_file_path = self.filepath
+#         return {'FINISHED'}
+
+#     def draw(self, context):
+#         pass
+
+# class ImportCamTrackFileSettings(Panel):
+#     bl_space_type = 'FILE_BROWSER'
+#     bl_region_type = 'TOOL_PROPS'
+#     bl_label = "CamTrackFile Import Settings"
+
+#     @classmethod
+#     def poll(cls, context):
+#         operator = context.space_data.active_operator
+#         return operator.bl_idname == bpy.ops.beeble.sl_camtrack.idname()
+
+#     def draw(self, context):
+#         layout = self.layout
+#         layout.use_property_split = False
+#         layout.use_property_decorate = False  # No animation.
+
+#         layout.prop(context.scene, 'switch_to_cam')
 
 class SwitchLightStudioPanel(bpy.types.Panel):
     bl_label = "SwitchLight Studio"
@@ -256,20 +563,51 @@ class SwitchLightStudioPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
+        col = layout.column(align=True)
+        col.label(text="SL CamTrack Directory")
+        col.label(text="(Optional)")
+        layout.prop(context.scene.tool, "camtrack_path", text="")
+
         # Load PBR Sequence
-        layout.label(text="Select PBR Directory")
-        layout.prop(context.scene.my_tool, "pbr_path", text="")
+        layout.label(text="PBR Directory")
+        layout.prop(context.scene.tool, "pbr_path", text="")
 
         # Button to create a plane
         layout.operator("object.load_pbr_sequence_operator")
 
+        # Adding a divider
+        layout.separator()
+
+        # SL Track Data (read-only)
+        if context.scene.camera:
+            layout.label(text="SL Track Data")
+            # Temporarily disable the layout to make properties read-only
+            row = layout.row()
+            row.enabled = False
+            row.prop(context.scene.render, "fps", text="FPS")
+            row = layout.row()
+            row.enabled = False
+            row.prop(context.scene.camera.data, "lens", text="Focal Length")
+            row = layout.row()
+            row.enabled = False
+            row.prop(context.scene.camera.data, "sensor_height", text="Sensor Height")
+            row = layout.row()
+            row.enabled = False
+            row.prop(context.scene.render, "resolution_x", text="Resolution_X")
+            row = layout.row()
+            row.enabled = False
+            row.prop(context.scene.render, "resolution_y", text="Resolution_Y")
 
 class LoadPBRSequenceOperator(bpy.types.Operator):
     bl_idname = "object.load_pbr_sequence_operator"
     bl_label = "Load PBR Sequence"
 
     def execute(self, context):
-        import_pbr_sequence(context)
+        if not context.scene.tool.camtrack_file_path:
+            import_pbr_sequence(context)
+        else:
+            import_pbr_sequence_and_camtrack_data(self, context)
+
         return {'FINISHED'}
 
 def register():
@@ -277,12 +615,17 @@ def register():
     bpy.utils.register_class(LoadPBRSequenceOperator)
     bpy.utils.register_class(SwitchLightStudioPanel)
     bpy.utils.register_class(DirProperties)
-    bpy.types.Scene.my_tool = bpy.props.PointerProperty(type=DirProperties)
+    bpy.types.Scene.tool = bpy.props.PointerProperty(type=DirProperties)
 
 def unregister():
+    # Unregister the operator and panel
     bpy.utils.unregister_class(LoadPBRSequenceOperator)
     bpy.utils.unregister_class(SwitchLightStudioPanel)
     bpy.utils.unregister_class(DirProperties)
+
+    # Remove the custom property from the Scene type
+    if hasattr(bpy.types.Scene, 'tool'):
+        del bpy.types.Scene.tool
 
 if __name__ == "__main__":
     register()

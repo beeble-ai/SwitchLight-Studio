@@ -39,8 +39,8 @@ Key features include:
 
 #### 1.1 Script Download
 
-1. Download the `pbr_loader.py` script from this repository:
-   [Download pbr_loader.py](https://github.com/beeble-ai/SwitchLight-Studio/blob/main/blender/pbr_loader.py)
+1. Download the `pbr_loader_blender.py` script from this repository:
+   [Download pbr_loader_blender.py](https://github.com/beeble-ai/SwitchLight-Studio/blob/main/blender/pbr_loader_blender.py)
 
 #### 1.2 Start Blender
 
@@ -58,7 +58,7 @@ Key features include:
    <br><br>
    <img src="https://desktop.beeble.ai/public/blender_readme/3_1_install_button.png" alt="Install add-on" width="750" height="630"/>
 
-3. Select the `pbr_loader.py` file you downloaded.
+3. Select the `pbr_loader_blender.py` file you downloaded.
    <br><br>
    <img src="https://desktop.beeble.ai/public/blender_readme/3_2_select_pbr_loader.png" alt="Install add-on" width="750" height="630"/>
 

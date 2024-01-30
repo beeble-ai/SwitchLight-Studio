@@ -34,7 +34,7 @@ for name in ["Import PBR Maps"]:
         e.set_string_command(
             unreal.ToolMenuStringCommandType.PYTHON,
             custom_type=unreal.Name(''),
-            string="import pbr_loader; pbr_loader.run();")
+            string="import pbr_loader_UE; pbr_loader_UE.run();")
 
     custom_menu.add_menu_entry("Items", e)
 

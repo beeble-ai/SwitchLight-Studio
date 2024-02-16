@@ -2,7 +2,7 @@ bl_info = {
     "name": "SwitchLight Studio",
     "author": "Beeble Inc.",
     'description': 'SwitchLight Studio Plugin for Blender',
-    'version': (0, 1, 1),
+    'version': (0, 1, 2),
     'blender': (2, 80, 0),
     'location': '3D View',
     'warning': '',
@@ -448,9 +448,6 @@ def import_pbr_sequence(context):
     width, height = albedo_img.size
     bpy.context.scene.render.resolution_x = width
     bpy.context.scene.render.resolution_y = height
-
-    bpy.context.scene.world.color = (0, 0, 0)  # Set world color to black
-    bpy.context.scene.world.use_nodes = False  # Disable use of environment texture
 
     # Create a plane with the dimensions of the albedo texture
     bpy.ops.mesh.primitive_plane_add(size=1, calc_uvs=True, enter_editmode=False, align='WORLD')

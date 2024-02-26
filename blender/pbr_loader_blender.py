@@ -2,7 +2,7 @@ bl_info = {
     "name": "SwitchLight Studio",
     "author": "Beeble Inc.",
     'description': 'SwitchLight Studio Plugin for Blender',
-    'version': (0, 1, 2),
+    'version': (0, 1, 3),
     'blender': (2, 80, 0),
     'location': '3D View',
     'warning': '',
@@ -118,59 +118,39 @@ def create_material(plane_obj, map_paths, frame_start, frame_end):
             mat.node_tree.links.new(normal_map_node.inputs['Color'], tex_node.outputs['Color'])
             mat.node_tree.links.new(bsdf_node.inputs['Normal'], normal_map_node.outputs['Normal'])
         elif map_type == 'Roughness':
-            sep_color_node_roughness = mat.node_tree.nodes.new('ShaderNodeSeparateColor')
-            sep_color_node_roughness.parent = frame
-            sep_color_node_roughness.location = (-800, -300 * index)  # Example positioning
-            # Link the texture node to the 'Separate RGB' node
-            mat.node_tree.links.new(sep_color_node_roughness.inputs['Color'], tex_node.outputs['Color'])
-            # Link the red channel of 'Separate RGB' to the Roughness input of the Principled BSDF
-            mat.node_tree.links.new(bsdf_node.inputs['Roughness'], sep_color_node_roughness.outputs['Red'])
+            mat.node_tree.links.new(bsdf_node.inputs['Roughness'], tex_node.outputs['Color'])
         elif map_type == 'Specular':
-
-            # Create separate color node
-            sep_color_node_specular = mat.node_tree.nodes.new('ShaderNodeSeparateColor')
-            sep_color_node_specular.parent = frame
-            sep_color_node_specular.location = (-800, -300 * index)  # Example positioning
-
             # blender 4.x
             if bpy.app.version[0] == 4:
                 spec_math_node1 = mat.node_tree.nodes.new('ShaderNodeMath')
                 spec_math_node1.operation = 'MULTIPLY'
                 spec_math_node1.inputs[1].default_value = -0.4
                 spec_math_node1.parent = frame
-                spec_math_node1.location = (-600, -300 * index)
+                spec_math_node1.location = (-800, -300 * index)
                 spec_math_node2 = mat.node_tree.nodes.new('ShaderNodeMath')
                 spec_math_node2.operation = 'ADD'
                 spec_math_node2.inputs[1].default_value = 1.0
                 spec_math_node2.parent = frame
-                spec_math_node2.location = (-400, -300 * index)
+                spec_math_node2.location = (-600, -300 * index)
                 spec_math_node3 = mat.node_tree.nodes.new('ShaderNodeMath')
                 spec_math_node3.operation = 'DIVIDE'
                 spec_math_node3.inputs[0].default_value = 2.0
                 spec_math_node3.parent = frame
-                spec_math_node3.location = (-200, -300 * index)
+                spec_math_node3.location = (-400, -300 * index)
                 spec_math_node4 = mat.node_tree.nodes.new('ShaderNodeMath')
                 spec_math_node4.operation = 'ADD'
                 spec_math_node4.inputs[1].default_value = -1.0
                 spec_math_node4.parent = frame
-                spec_math_node4.location = (0, -300 * index)
+                spec_math_node4.location = (-200, -300 * index)
                 # Refletivity -> IOR
-
-                # Link the texture node to the 'Separate RGB' node
-                mat.node_tree.links.new(sep_color_node_specular.inputs['Color'], tex_node.outputs['Color'])
-
-                # Link the red channel of 'Separate RGB' to the Specular input of the Principled BSDF
-                mat.node_tree.links.new(spec_math_node1.inputs[0], sep_color_node_specular.outputs['Red'])
+                mat.node_tree.links.new(spec_math_node1.inputs[0], tex_node.outputs['Color'])
                 mat.node_tree.links.new(spec_math_node2.inputs[0], spec_math_node1.outputs[0])
                 mat.node_tree.links.new(spec_math_node3.inputs[1], spec_math_node2.outputs[0])
                 mat.node_tree.links.new(spec_math_node4.inputs[0], spec_math_node3.outputs[0])
                 # IOR
                 mat.node_tree.links.new(bsdf_node.inputs['IOR'], spec_math_node4.outputs[0])
             else:
-                # Link the texture node to the 'Separate RGB' node
-                mat.node_tree.links.new(sep_color_node_specular.inputs['Color'], tex_node.outputs['Color'])
-                # Link the red channel of 'Separate RGB' to the Specular input of the Principled BSDF
-                mat.node_tree.links.new(bsdf_node.inputs['Specular'], sep_color_node_specular.outputs['Red'])
+                mat.node_tree.links.new(bsdf_node.inputs['Specular'], tex_node.outputs['Color'])
         elif map_type == 'Key':
             mat.node_tree.links.new(bsdf_node.inputs['Alpha'], tex_node.outputs['Alpha'])
 
@@ -532,43 +512,6 @@ class DirProperties(bpy.types.PropertyGroup):
         default="",
         maxlen=1024,
         subtype='FILE_PATH')
-
-# class ImportCamTrackFile(Operator, ImportHelper):
-#     bl_idname = "beeble.sl_camtrack"
-#     bl_label = "SL CamTrack File (.json)"
-
-#     # ImportHelper mixin class uses this
-#     filename_ext = ".json"
-
-#     filter_glob: StringProperty(
-#         default="*.json",
-#         options={'HIDDEN'},
-#         maxlen=255,  # Max internal buffer length, longer would be clamped.
-#     )
-
-#     def execute(self, context):
-#         context.scene.tool.camtrack_file_path = self.filepath
-#         return {'FINISHED'}
-
-#     def draw(self, context):
-#         pass
-
-# class ImportCamTrackFileSettings(Panel):
-#     bl_space_type = 'FILE_BROWSER'
-#     bl_region_type = 'TOOL_PROPS'
-#     bl_label = "CamTrackFile Import Settings"
-
-#     @classmethod
-#     def poll(cls, context):
-#         operator = context.space_data.active_operator
-#         return operator.bl_idname == bpy.ops.beeble.sl_camtrack.idname()
-
-#     def draw(self, context):
-#         layout = self.layout
-#         layout.use_property_split = False
-#         layout.use_property_decorate = False  # No animation.
-
-#         layout.prop(context.scene, 'switch_to_cam')
 
 class SwitchLightStudioPanel(bpy.types.Panel):
     bl_label = "SwitchLight Studio"

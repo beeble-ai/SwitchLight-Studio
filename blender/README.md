@@ -47,34 +47,35 @@ Key features include:
 #### 1.2 Start Blender
 
 1. Launch Blender and optionally clear the default objects from the scene.
-   <br><br>
-   <img src="https://desktop.beeble.ai/public/blender_readme/2_1_remove_object.png" alt="Remove Objects" width="750" height="630"/>
+   
+   ![Remove Objects](https://desktop.beeble.ai/public/blender_readme/2_1_remove_object.png)
 
 #### 1.3 Plugin Installation
 
 1. Navigate through 'Edit' > 'Preferences'.
 
-   <img src="https://desktop.beeble.ai/public/blender_readme/3_0_preference.png" alt="Install add-on" width="750" height="630"/>
+   ![Install add-on 1](https://desktop.beeble.ai/public/blender_readme/3_0_preference.png)
 
 2. Click on 'Install...'.
-   <br><br>
-   <img src="https://desktop.beeble.ai/public/blender_readme/3_1_install_button.png" alt="Install add-on" width="750" height="630"/>
 
-3. Select the `pbr_loader_blender.py` file you downloaded.
-   <br><br>
-   <img src="https://desktop.beeble.ai/public/blender_readme/3_2_select_pbr_loader.png" alt="Install add-on" width="750" height="630"/>
+   ![Install add-on 2](https://desktop.beeble.ai/public/blender_readme/3_1_install_button.png)
 
-4. Tick the checkbox to enable the SwitchLight Add-on.
-   <br><br>
-   <img src="https://desktop.beeble.ai/public/blender_readme/3_3_activate_addon.png" alt="Activate add-on" width="750" height="630"/>
+4. Select the `pbr_loader_blender.py` file you downloaded.
+
+   ![Install add-on 3](https://desktop.beeble.ai/public/blender_readme/3_2_select_pbr_loader.png)
+
+6. Tick the checkbox to enable the SwitchLight Add-on.
+
+   ![Activate add-on 4](https://desktop.beeble.ai/public/blender_readme/3_3_activate_addon.png)
 
 ### 2. Recommended Setup
 
 #### 2.1 Use Eevee
 
 1. Use Eevee for rendering
-   <br><br>
-   <img src="https://desktop.beeble.ai/public/blender_readme/eevee.png" width="300" height="630"/>
+
+   ![Eevee](https://desktop.beeble.ai/public/blender_readme/eevee.png)
+
 
 ### 3. (Optional) SL CamTrack Integration
 
@@ -97,24 +98,24 @@ Coming soon
 #### 4.1 Load PBR Maps Using the Script
 
 1. Open the SwitchLight Add-on from the sidebar.
-   <br><br>
-   <img src="https://desktop.beeble.ai/public/blender_readme/4_0_click_addon.png" alt="Open add-on" width="750" height="630"/>
+
+   ![Open add-on](https://desktop.beeble.ai/public/blender_readme/4_0_click_addon.png)
 
 2. Import your desired SwitchLight PBR sequence. <b>The selected directory should contain SwitchLight PBR map folders (i.e., albedo, normal, roughness, and specular).</b>
-   <br><br>
-   <img src="https://desktop.beeble.ai/public/blender_readme/4_2_load_pbr.png" alt="Import PBR" width="750" height="630"/>
+
+   ![Import PBR](https://desktop.beeble.ai/public/blender_readme/4_2_load_pbr.png)
 
 3. Click 'Load PBR Sequence' button.
-   <br><br>
-   <img src="https://desktop.beeble.ai/public/blender_readme/4_2_load_pbr_2.png" alt="Load PBR" width="750" height="630"/>
+
+   ![Load PBR](https://desktop.beeble.ai/public/blender_readme/4_2_load_pbr_2.png)
 
 4. Then, you will see the newly created SwitchLightPlane, SwitchLightCamera, and SwitchLightPointLight.
-   <br><br>
-   <img src="https://desktop.beeble.ai/public/blender_readme/4_4_load_pbr_3_updated.png" alt="Apply PBR" width="750" height="630"/>
+
+   ![Apply PBR](https://desktop.beeble.ai/public/blender_readme/4_4_load_pbr_3_updated.png)
 
 5. Confirm the setup by clicking the parts as illustrated.
-   <br><br>
-   <img src="https://desktop.beeble.ai/public/blender_readme/5_0_completion_updated_2.png" alt="Completion" width="750" height="630"/>
+
+   ![Completion](https://desktop.beeble.ai/public/blender_readme/5_0_completion_updated_2.png)
 
 ## 5. FAQ
 

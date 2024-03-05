@@ -41,6 +41,8 @@ Key features include:
 1. Download the `pbr_loader_UE.py` script from this repository:
    [Download pbr_loader_UE.py](https://github.com/beeble-ai/SwitchLight-Studio/blob/main/unreal_engine/pbr_loader_UE.py)
 
+   If you are an enterprise user, you can find `pbr_loader_UE.py` in the downloaded zip file.
+
 #### 1.2 Start Unreal Editor
 
 1. Launch Unreal Engine.

@@ -42,6 +42,8 @@ Key features include:
 1. Download the `pbr_loader_blender.py` script from this repository:
    [Download pbr_loader_blender.py](https://github.com/beeble-ai/SwitchLight-Studio/blob/main/blender/pbr_loader_blender.py)
 
+   If you are an enterprise user, you can find `pbr_loader_blender.py` in the downloaded zip file.
+
 #### 1.2 Start Blender
 
 1. Launch Blender and optionally clear the default objects from the scene.

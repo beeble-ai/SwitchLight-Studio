@@ -55,9 +55,9 @@ jobs:
           file="/data/deploy/${filename}"
           if [ -f "$file" ]; then
             if [[ "$file" == *.exe ]]; then
-              s3_path="s3://${{ secrets.S3_BUCKET_NAME }}/enterprise/production/windows/download/${filename}"
+              s3_path="s3://${{ secrets.S3_BUCKET_NAME }}/pro/production/windows/download/${filename}"
             elif [[ "$file" == *.deb ]] || [[ "$file" == *.rpm ]]; then
-              s3_path="s3://${{ secrets.S3_BUCKET_NAME }}/enterprise/production/linux/download/${filename}"
+              s3_path="s3://${{ secrets.S3_BUCKET_NAME }}/pro/production/linux/download/${filename}"
             fi
             aws s3 cp "$file" "$s3_path"
           fi
@@ -71,5 +71,5 @@ jobs:
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       run: |
-        PAYLOAD=$(echo "Electron Production deployed Successfully" | jq -R -s '{text: .}')
+        PAYLOAD=$(echo ":white_check_mark: [Pro] Publishing Electron Complete\nversion: ${filename}\nplatform: - \n" | jq -R -s '{text: .}')
         curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" $SLACK_WEBHOOK_URL

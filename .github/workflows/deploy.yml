@@ -1,0 +1,75 @@
+name: Publish Release, Upload to S3, and Notify Slack
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release-and-notify:
+    runs-on: self-hosted
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Publish Latest Draft Release
+      uses: actions/github-script@v5
+      with:
+        script: |
+                const { data: releases } = await github.rest.repos.listReleases({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                });
+                const draftRelease = releases.find(release => release.draft === true);
+                if (!draftRelease) {
+                  throw new Error("No draft release found");
+                }
+                const { data: publishedRelease } = await github.rest.repos.updateRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: draftRelease.id,
+                  draft: false,
+                });
+                core.setOutput("body", publishedRelease.body);
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      id: publish_release
+
+    - name: Download Release Assets (.exe, .deb, .rpm) and Track Them
+      run: |
+        mkdir -p /data/deploy
+        # Clear or create the downloaded_files.txt file
+        > /data/deploy/downloaded_files.txt
+        
+        ASSETS_URLS=$(curl -s \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r '.assets[] | .browser_download_url' | grep -E '\.(exe|deb|rpm)$')
+        
+        echo "$ASSETS_URLS" | while read url; do
+          filename=$(basename "$url")
+          curl -L -o "/data/deploy/${filename}" "$url" && echo "${filename}" >> /data/deploy/downloaded_files.txt
+        done
+
+    - name: Upload Downloaded Assets to AWS S3
+      run: |
+        while read filename; do
+          file="/data/deploy/${filename}"
+          if [ -f "$file" ]; then
+            if [[ "$file" == *.exe ]]; then
+              s3_path="s3://${{ secrets.S3_BUCKET_NAME }}/enterprise/production/windows/download/${filename}"
+            elif [[ "$file" == *.deb ]] || [[ "$file" == *.rpm ]]; then
+              s3_path="s3://${{ secrets.S3_BUCKET_NAME }}/enterprise/production/linux/download/${filename}"
+            fi
+            aws s3 cp "$file" "$s3_path"
+          fi
+        done < /data/deploy/downloaded_files.txt
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: 'us-west-2'
+    
+    - name: Send Release Note to Slack
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        PAYLOAD=$(echo "Electron Production deployed Successfully" | jq -R -s '{text: .}')
+        curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" $SLACK_WEBHOOK_URL

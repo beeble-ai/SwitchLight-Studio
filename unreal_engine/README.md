@@ -39,7 +39,7 @@ Key features include:
 #### 1.1 Script Download
 
 1. Download the `pbr_loader_UE.py` script from this repository:
-   [Download pbr_loader_UE.py](https://github.com/beeble-ai/SwitchLight-Studio/blob/main/unreal_engine/pbr_loader_UE.py)
+   [Download pbr_loader_UE.py](https://github.com/beeble-ai/SwitchLight-Studio/blob/main/unreal_engine/pbr_loader_ue.py)
 
    If you are an enterprise user, you can find `pbr_loader_UE.py` in the downloaded zip file.
 

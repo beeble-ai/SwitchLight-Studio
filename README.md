@@ -1,39 +1,23 @@
-# SwitchLight Studio
-<p align="center"><img style="width: 500px;" src="https://desktop.beeble.ai/public/youtube-banner-2.png"></p>
+# We Rebranded! SwitchLight is now **Beeble**
 
-## Usage
+![Beeble Banner](./banner.webp)
 
-SwitchLight Studio is a video relighting AI solution for professionals. <br/>With this app, you can extract material maps (Normal, Albedo, Roughness, and Specular maps) along with alpha from videos and do video relighting. All these features are run on your own GPUs so no data is transmitted externally. 
+Our relighting and PBR map extraction are now available on the web — no installs, no headaches.  
 
-SwitchLight Studio is currently in its closed beta. If you'd like to try out, please submit the beta application form in our <a href="https://discord.gg/5REz3mzWwj" target="_blank">Discord</a>.
+🚀 **Try Beeble Today → [beeble.ai](https://beeble.ai)**  
 
-## SwitchLight Add-on For Blender
-With a single click, you can import your SwitchLight PBR sequences directly onto a dummy plane, facilitating seamless experimentation within your Blender projects. For more details, please see <a href="https://github.com/beeble-ai/SwitchLight-Studio/blob/main/blender/README.md">README.md</a>
+### What’s New:
 
-## SwitchLight Python Script For UE
-This script automates the import and application of SwitchLight PBR materials in Unreal Engine. Key features include:
-- Creation of Img Media Sources, Media textures, and Media players from PBR maps.
-- BSDF material setup with integrated color space conversion and normal map processing.
-- Level Sequencer setup for rendering 3D scenes and materials using the Movie Render Queue.
+**1️⃣ Web-Based VFX Pass Generation**  
+Generate Albedo, Normal, Roughness, Specular, Motion Vector, Alpha, and Depth — all in the cloud.  
+✅ Mac-friendly (no OS issues!)  
+✅ Sharper normals  
+✅ Faster + more accurate depth maps  
 
-For more details, please see <a href="https://github.com/beeble-ai/SwitchLight-Studio/blob/main/unreal_engine/README.md">README.md</a>
+**2️⃣ Real-Time Relighting in Your Browser**  
+Relight scenes instantly — no need for Blender or Unreal.  
+Upload HDRIs or use built-in lighting tools for full creative control.  
 
-## SwitchLight Web
-If you'd like to try SwitchLight on still images, no GPU or installations needed, just visit: 
-<a href="(https://switchlight.beeble.ai/)" target="_blank"> https://switchlight.beeble.ai/</a>
-
-## SwitchLight API
-Relighting & HDRI extraction APIs are now available on <a href="(https://switchlight-api.beeble.ai/)" target="_blank"> https://switchlight-api.beeble.ai/</a> 
-Create your own applications that use the same state-of-the-art technology that powers the SwitchLight: From background removal and PBR map extraction to relighting. 
-
-### 1️⃣  Relighting API
-Relight your images using HDRI maps.
-You can adjust lighting direction and strength, keying method just like web.
-
-### 2️⃣ HDRI extraction API
-Extract the lighting source from portrait images, delivered as a 64 x 32 HDRI image in .exr format.
-The Extracted HDRI map contains all the necessary information of the surrounding lighting.
-Use the HDRI map with our Relighting API to apply the same lighting environment to different images.
-
-
-
+**3️⃣ Brand New Blender & UE Add-on**  
+Massively upgraded from the old SwitchLight version.  
+Send assets directly to Blender with a smoother, more integrated workflow.
